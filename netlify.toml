@@ -1,0 +1,7 @@
+# Netlify 连 Git 仓库自动部署时使用（拖拽 dist 文件夹部署不需要这个文件）
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"

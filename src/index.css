@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --animate-pop: pop 0.22s ease-out;
+  --animate-shake: shake 0.35s ease-in-out;
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-6px);
+    }
+    75% {
+      transform: translateX(6px);
+    }
+  }
+}
+
+@layer base {
+  html {
+    background: radial-gradient(1200px 600px at 10% -10%, #e0e7ff 0%, transparent 60%), radial-gradient(900px 500px at 110% 10%, #f3e8ff 0%, transparent 55%), #f8fafc;
+    background-attachment: fixed;
+    color: #1e293b;
+  }
+  body {
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid #818cf8;
+    outline-offset: 1px;
+  }
+}
+
+@layer components {
+  .card {
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow:
+      0 1px 2px rgb(15 23 42 / 0.04),
+      0 8px 24px -12px rgb(15 23 42 / 0.12);
+    border: 1px solid rgb(226 232 240);
+  }
+}
+
+/* 视觉生词本的两种遮挡自测模式：鼠标悬停显形 */
+.blur-en .word-en,
+.blur-zh .word-zh {
+  filter: blur(6px);
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.blur-en .word-en:hover,
+.blur-zh .word-zh:hover {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
