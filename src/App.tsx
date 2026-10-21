@@ -58,7 +58,7 @@ export default function App() {
       <Header onOpen={setModal} />
       <AiBar onOpenSettings={() => setModal('settings')} />
       <RuleBanner />
-      <main className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+      <main className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] [&>*]:min-w-0">
         <SceneCard />
         <InputCard />
       </main>

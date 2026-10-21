@@ -188,6 +188,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [phase, extras, update]);
 
   const submit = useCallback(async (): Promise<RoundResult | null> => {
+    // 读同步镜像而非闭包里的 session：提交前同一事件里刚 commit 的输入框内容也要参与判卷
+    const session = sessionRef.current;
     if (!session || !session.words.length || judgingRef.current) return null;
     judgingRef.current = true;
     setPhase('judging');
@@ -222,7 +224,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const score = computeWeightedScore(judgments, nPass, nFull);
     const result: RoundResult = { judgments, score, recommendations, mode, fallbackReason, learned, judgedAt: Date.now() };
 
-    setSession((s) => (s && s.level.id === level.id ? { ...s, result } : s));
+    update((s) => (s.level.id === level.id ? { ...s, result } : s));
     setPhase('result');
     judgingRef.current = false;
 
@@ -262,7 +264,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       });
     }
     return result;
-  }, [session, extras]);
+  }, [extras, update]);
 
   const replay = useCallback(() => {
     update((s) => ({ ...s, words: [], hints: [], result: null, startedAt: Date.now() }));

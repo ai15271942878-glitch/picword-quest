@@ -157,7 +157,6 @@ export function InputCard() {
   };
 
   const onSubmit = async () => {
-    if (!words.length) return;
     if (text.trim()) commit();
     const r = await submit();
     if (r?.fallbackReason) toast(r.fallbackReason, 'warn', 7000);
@@ -288,7 +287,7 @@ export function InputCard() {
             </Button>
           </div>
         ) : (
-          <Button size="lg" variant="success" className="w-full py-3" onClick={() => void onSubmit()} disabled={!words.length || phase === 'judging'}>
+          <Button size="lg" variant="success" className="w-full py-3" onClick={() => void onSubmit()} disabled={(!words.length && !text.trim()) || phase === 'judging'}>
             {phase === 'judging' ? (
               <>
                 <Spinner /> {settings.aiEnabled ? 'AI 判卷中…' : '判卷中…'}
