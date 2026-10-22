@@ -12,7 +12,7 @@ import { exportDictPack, importDictPack } from './dictionary';
 import { getSetting } from './db';
 import type { DictMeta } from '../types';
 
-import { CLOUD_ANON_KEY, CLOUD_URL, cloudConfigured } from './cloudConfig';
+import { AUTH_STORAGE_KEY, CLOUD_ANON_KEY, CLOUD_URL, cloudConfigured } from './cloudConfig';
 
 export { cloudConfigured };
 
@@ -24,7 +24,7 @@ let clientPromise: Promise<SupabaseClient> | null = null;
 export function getCloud(): Promise<SupabaseClient> {
   if (!cloudConfigured()) return Promise.reject(new Error('云端账号还没有配置'));
   clientPromise ??= import('@supabase/supabase-js').then(({ createClient }) =>
-    createClient(CLOUD_URL, CLOUD_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'picword.cloud.auth' } }),
+    createClient(CLOUD_URL, CLOUD_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: AUTH_STORAGE_KEY } }),
   );
   return clientPromise;
 }
@@ -166,4 +166,35 @@ export async function downloadDictFromCloud(onProgress?: (stage: 'download' | 'i
   const pack = new Blob(blobs);
   if (pack.size !== manifest.size) throw new Error('云端词典不完整（大小对不上），请在原设备上重新上传');
   return importDictPack(pack, `${manifest.name}.pwdict`, (d, t) => onProgress?.('import', d, t));
+}
+
+// ------------------------------------------------------------
+// 自动恢复：登录后 / 打开页面时，自动同步存档；本机没有词典而云端有，就自动下载
+// ------------------------------------------------------------
+
+export type Notify = (msg: string, kind: 'info' | 'success' | 'error') => void;
+
+let restoring: Promise<void> | null = null;
+
+/** 同一时间只跑一次（打开页面和刚登录可能同时触发）；出错只提示，不打断游戏 */
+export function autoRestore(notify: Notify): Promise<void> {
+  restoring ??= (async () => {
+    try {
+      if (!(await currentUser())) return;
+      const r = await syncDataWithCloud();
+      if (r.pulled && r.pulled.levels + r.pulled.vocab + r.pulled.history > 0) {
+        notify(`☁️ 已从云端同步：关卡 ${r.pulled.levels} · 生词 ${r.pulled.vocab} · 记录 ${r.pulled.history}`, 'success');
+      }
+      if (!(await getSetting<DictMeta | null>('dict', null)) && (await cloudDictInfo())) {
+        notify('☁️ 正在从云端恢复图解词典，稍等片刻…', 'info');
+        const meta = await downloadDictFromCloud();
+        notify(`☁️ 已从云端恢复「${meta.name}」：${meta.pageCount} 页、${meta.entryCount} 个词条`, 'success');
+      }
+    } catch (e) {
+      notify(`☁️ 云端自动同步失败：${cloudErrorText(e)}`, 'error');
+    } finally {
+      restoring = null;
+    }
+  })();
+  return restoring;
 }

@@ -6,6 +6,7 @@ import { InputCard, SceneCard } from './components/game/PlayArea';
 import { ResultPanel } from './components/game/ResultPanel';
 import { useToast } from './components/ui/Toast';
 import { cx } from './components/ui/primitives';
+import { cloudConfigured, hasCloudSession } from './services/cloudConfig';
 
 // 弹窗按需懒加载：首次打开时才下载对应代码，首屏更快
 const AiCreateModal = lazy(() => import('./components/modals/AiCreateModal').then((m) => ({ default: m.AiCreateModal })));
@@ -53,6 +54,15 @@ export default function App() {
       clearNotice();
     }
   }, [notice, toast, clearNotice]);
+
+  // 启动时：登录过云端账号就自动同步存档、按需恢复词典（没登录过不加载云端代码）
+  useEffect(() => {
+    if (!cloudConfigured() || !hasCloudSession()) return;
+    const t = setTimeout(() => {
+      void import('./services/cloud').then((m) => m.autoRestore((msg, kind) => toast(msg, kind, kind === 'error' ? 8000 : 5000)));
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   // 启动时清理没人引用的图片
   useEffect(() => {

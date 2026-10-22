@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import {
+  autoRestore,
   cloudConfigured,
   cloudDictInfo,
   cloudErrorText,
@@ -38,7 +39,11 @@ function LoginForm() {
     if (!email.trim() || password.length < 6) return toast('请填写邮箱和至少 6 位的密码', 'warn');
     setBusy(kind);
     try {
-      if (kind === 'in') await signIn(email.trim(), password);
+      if (kind === 'in') {
+        await signIn(email.trim(), password);
+        // 新设备登录：自动拉取存档，本机没有词典就从云端恢复
+        void autoRestore((msg, k) => toast(msg, k, k === 'error' ? 8000 : 5000));
+      }
       else {
         const r = await signUp(email.trim(), password);
         if (r.needConfirm) setSent(true);
