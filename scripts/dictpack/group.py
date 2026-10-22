@@ -11,6 +11,7 @@ FINALS = [
 SYLLABLES = {i + f for i in INITIALS for f in FINALS}
 
 CJK = re.compile(r"[㐀-鿿]")
+TONES = re.compile("[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]")
 SKIP = re.compile(r"公众号|学习必备|资料库|^\d+$|zh[oō]ngw[eé]n|english$", re.I)
 
 
@@ -22,7 +23,7 @@ def plain(s):
 
 def is_pinyin(text):
     """带声调符号的一定是拼音；否则看能否完整切分成拼音音节（OCR 会丢声调）。"""
-    if any(c in text for c in "āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ"):
+    if TONES.search(text):
         return True
     s = re.sub(r"[^a-z]", "", plain(text))
     if not s:
@@ -41,17 +42,26 @@ def _overlap_x(a, b):
     return inter / max(1e-6, min(a["x1"] - a["x0"], b["x1"] - b["x0"]))
 
 
+def stage(text):
+    """标签内的行序：0 中文 → 1 拼音 → 2 英文。"""
+    if CJK.search(text):
+        return 0
+    return 1 if is_pinyin(text) else 2
+
+
 def blocks_of(lines):
-    """竖向相邻、水平重叠的行归为同一个标签块。"""
+    """竖向相邻、水平重叠、并且按“中文 → 拼音 → 英文”顺序排列的行归为同一个标签块。
+    出现了英文之后再来中文（或拼音），说明是下一个标签。"""
     lines = sorted(lines, key=lambda l: (l["y0"], l["x0"]))
     blocks = []
     for ln in lines:
         h = ln["y1"] - ln["y0"]
+        st = stage(ln["text"])
         best = None
         for b in blocks:
             last = b[-1]
             gap = ln["y0"] - last["y1"]
-            if -0.5 * h <= gap <= 1.0 * h and _overlap_x(ln, last) > 0.3 and len(b) < 4:
+            if -0.5 * h <= gap <= 1.0 * h and _overlap_x(ln, last) > 0.3 and len(b) < 5 and st >= stage(last["text"]):
                 best = b
         if best is not None:
             best.append(ln)
@@ -61,7 +71,10 @@ def blocks_of(lines):
 
 
 def clean_en(s):
+    s = unicodedata.normalize("NFKC", s)  # ﬁ → fi
+    s = re.sub(r"\s*\((v|n|adj|adv)\)\s*$", "", s)  # 去掉词性标记：laugh (v) → laugh
     s = re.sub(r"\s+", " ", s).strip(" .,;:·•")
+    s = re.sub(r"\s*/\s*", "/", s)
     return s.lower() if s.isupper() and len(s) > 3 else s
 
 
@@ -74,8 +87,20 @@ def entries_of(lines):
             continue
         zh = re.sub(r"\s+", "", "".join(zh_lines))
         latin = [l["text"] for l in b if not CJK.search(l["text"])]
-        if len(latin) >= 2:
-            # 标签固定是“中文、拼音、英文”竖排：最后一行是英文，前面的是拼音（OCR 认错拼音也不影响）
+        if any(TONES.search(t) for t in latin):
+            # 文字层带声调：有声调的是拼音，其余是英文（英文折行时会有多行）
+            py = [t for t in latin if TONES.search(t)]
+            en = [t for t in latin if not TONES.search(t)]
+            # PDF 偶尔把拼音和下一行英文排在同一行（“tǐjiǎn medical”）：把末尾的英文挪回英文部分
+            if py:
+                toks = py[-1].split()
+                last = max(i for i, t in enumerate(toks) if TONES.search(t))
+                tail = toks[last + 1:]
+                if tail and any(not is_pinyin(t) for t in tail):
+                    py[-1] = " ".join(toks[:last + 1])
+                    en = [" ".join(tail)] + en
+        elif len(latin) >= 2:
+            # OCR 丢了声调：标签固定是“中文、拼音、英文”竖排，最后一行是英文，前面的是拼音
             en, py = [latin[-1]], latin[:-1]
         else:
             py = [t for t in latin if is_pinyin(t)]
