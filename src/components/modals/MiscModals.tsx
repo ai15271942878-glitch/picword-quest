@@ -31,10 +31,17 @@ function Stat({ label, value, sub, cls }: { label: string; value: string | numbe
   return (
     <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200">
       <div className="text-xs text-slate-500">{label}</div>
-      <div className={cx('mt-0.5 text-2xl font-extrabold tabular-nums text-slate-800', cls)}>{value}</div>
+      {/* 颜色二选一：同时写两个 text-* 时谁生效取决于 CSS 顺序，不是书写顺序 */}
+      <div className={cx('mt-0.5 text-2xl font-extrabold tabular-nums', cls ?? 'text-slate-800')}>{value}</div>
       {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
     </div>
   );
+}
+
+/** 用时：754 → 12′34″ */
+export function fmtDuration(sec: number): string {
+  const s = Math.max(0, Math.round(sec));
+  return `${Math.floor(s / 60)}′${String(s % 60).padStart(2, '0')}″`;
 }
 
 export function StatsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -51,6 +58,8 @@ export function StatsModal({ open, onClose }: { open: boolean; onClose: () => vo
   const words = history.reduce((a, h) => a + h.wordCount, 0);
   const aiN = history.filter((h) => h.mode === 'ai').length;
   const avgTime = n ? Math.round(history.reduce((a, h) => a + h.durationSec, 0) / n) : 0;
+  const passTimes = history.filter((h) => h.passed).map((h) => h.durationSec);
+  const fastestPass = passTimes.length ? Math.min(...passTimes) : null;
   const now = Date.now();
 
   return (
@@ -65,7 +74,7 @@ export function StatsModal({ open, onClose }: { open: boolean; onClose: () => vo
             <Stat label="平均分 / 最高分" value={`${avg} / ${best}`} />
             <Stat label="连续打卡" value={`${streakDays(history.map((h) => h.playedAt))} 天`} sub="每天至少玩一局" cls="text-orange-500" />
             <Stat label="累计写出单词" value={words} sub={`平均每局 ${Math.round(words / n)} 个`} />
-            <Stat label="平均用时" value={`${Math.floor(avgTime / 60)}′${String(avgTime % 60).padStart(2, '0')}″`} />
+            <Stat label="平均用时" value={fmtDuration(avgTime)} sub={fastestPass === null ? '还没有过关记录' : `最快过关 ${fmtDuration(fastestPass)}`} cls="text-sky-600" />
             <Stat label="内置关卡进度" value={`${played?.length ?? 0} / ${SEED_LEVELS.length}`} sub="本轮已玩" />
             <Stat
               label="生词本"
@@ -99,7 +108,7 @@ export function StatsModal({ open, onClose }: { open: boolean; onClose: () => vo
                         {Number.isInteger(h.nValid) ? h.nValid : h.nValid.toFixed(1)} / {h.nPass}
                       </td>
                       <td className="px-3 py-1.5 text-right tabular-nums">{h.wordCount}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{h.durationSec}s</td>
+                      <td className="px-3 py-1.5 text-right tabular-nums">{fmtDuration(h.durationSec)}</td>
                       <td className="px-3 py-1.5 text-xs">{h.mode === 'ai' ? '🤖 AI' : '📴 离线'}</td>
                     </tr>
                   ))}
