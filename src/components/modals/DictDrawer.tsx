@@ -15,6 +15,9 @@ import { Button, Empty, SpeakButton, Spinner, cx } from '../ui/primitives';
 import { Lightbox } from '../ui/effects';
 import { useDialog } from '../ui/Dialog';
 import { useToast } from '../ui/Toast';
+import { DictSyncButton } from './GitHubSync';
+import { ghConfigOf, requestPersistentStorage } from '../../services/githubSync';
+import { useSettings } from '../../services/settings';
 
 function usePage(page: number | undefined): { rec: DictPage | null; url: string | null } {
   const [state, setState] = useState<{ rec: DictPage | null; url: string | null }>({ rec: null, url: null });
@@ -91,6 +94,7 @@ function ImportBox({ compact }: { compact?: boolean }) {
     setProgress([0, 1]);
     try {
       const meta = await importDictPack(f, f.name, (d, t) => setProgress([d, t]));
+      await requestPersistentStorage();
       toast(`已导入「${meta.name}」：${meta.pageCount} 页、${meta.entryCount} 个词条`, 'success', 5000);
     } catch (e) {
       const msg = (e as Error).name === 'QuotaExceededError' ? '浏览器存储空间不足，导入失败' : (e as Error).message;
@@ -124,6 +128,7 @@ function ImportBox({ compact }: { compact?: boolean }) {
 export function DictDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const meta = useDictMeta();
   const entries = useDictEntries();
+  const hasGh = !!ghConfigOf(useSettings());
   const { session } = useGame();
   const dialog = useDialog();
   const [q, setQ] = useState('');
@@ -197,8 +202,12 @@ export function DictDrawer({ open, onClose }: { open: boolean; onClose: () => vo
             <p className="mb-4">
               导入一个 <b>.pwdict</b> 词典包（由 PDF 图解词典转换而来），之后就能边玩边查：显示中文释义、拼音、发音，并展示单词所在的整页插图。
             </p>
-            <p className="mb-4 text-xs text-slate-400">词典只保存在这个浏览器里，不会上传，别人也看不到。</p>
-            <ImportBox />
+            <p className="mb-4 text-xs text-slate-400">词典只保存在这个浏览器里，别人看不到。</p>
+            <div className="flex flex-col items-center gap-3">
+              <DictSyncButton />
+              <ImportBox />
+              {!hasGh && <p className="text-xs text-slate-400">词典放在 GitHub 私有仓库里？到 ⚙️ 设置 →「GitHub 私有仓库同步」填好仓库和令牌，就能一键同步。</p>}
+            </div>
           </Empty>
         </div>
       ) : (
@@ -293,7 +302,10 @@ export function DictDrawer({ open, onClose }: { open: boolean; onClose: () => vo
             )}
           </div>
           <div className={cx('flex items-center justify-between gap-2 border-t border-slate-200 px-4 py-2.5')}>
-            <ImportBox compact />
+            <span className="flex items-center gap-2">
+              <ImportBox compact />
+              <DictSyncButton size="xs" label="☁️ 重新同步" />
+            </span>
             <Button size="xs" variant="ghost" className="text-rose-600" onClick={() => void remove()}>
               删除词典
             </Button>

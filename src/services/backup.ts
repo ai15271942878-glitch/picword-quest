@@ -11,6 +11,8 @@ import type { HistoryRecord, LevelExtras, SettingRow, StoredLevel, VocabItem } f
 
 export const BACKUP_APP = 'picword-quest';
 export const BACKUP_VERSION = 1;
+/** 只属于本机、不进存档的 settings 行：当前对局、图解词典元信息（词典本体不进存档，元信息也不能单独带过去） */
+const LOCAL_ONLY_KEYS = ['session', 'dict'];
 
 interface BackupImage {
   id: string;
@@ -53,8 +55,8 @@ export async function buildBackup(): Promise<BackupFile> {
     app: BACKUP_APP,
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
-    // 当前对局状态不导出
-    data: { levels, images: imgs, vocabBook, history, extras, settings: settings.filter((s) => s.key !== 'session') },
+    // 当前对局、词典元信息不导出
+    data: { levels, images: imgs, vocabBook, history, extras, settings: settings.filter((s) => !LOCAL_ONLY_KEYS.includes(s.key)) },
   };
 }
 
@@ -113,9 +115,9 @@ export async function importBackup(text: string, mode: 'merge' | 'replace'): Pro
   await db.transaction('rw', [db.levels, db.images, db.vocabBook, db.history, db.extras, db.settings], async () => {
     if (mode === 'replace') {
       await Promise.all([db.levels.clear(), db.images.clear(), db.vocabBook.clear(), db.history.clear(), db.extras.clear()]);
-      const keep = await db.settings.get('session');
+      const keep = (await db.settings.bulkGet(LOCAL_ONLY_KEYS)).filter((r) => r !== undefined);
       await db.settings.clear();
-      if (keep) await db.settings.put(keep);
+      if (keep.length) await db.settings.bulkPut(keep);
     }
     // 关卡 / 图片：按 ID 覆盖写入
     await db.images.bulkPut(images);
@@ -153,6 +155,7 @@ export async function importBackup(text: string, mode: 'merge' | 'replace'): Pro
     }
     // 收藏夹列表合并、已玩种子合并
     for (const s of data.settings ?? []) {
+      if (LOCAL_ONLY_KEYS.includes(s.key)) continue;
       const cur = await db.settings.get(s.key);
       if (cur && Array.isArray(cur.value) && Array.isArray(s.value)) {
         await db.settings.put({ key: s.key, value: [...new Set([...(cur.value as unknown[]), ...(s.value as unknown[])])] });
@@ -166,6 +169,9 @@ export async function importBackup(text: string, mode: 'merge' | 'replace'): Pro
 
 export async function clearAllData() {
   await db.transaction('rw', [db.levels, db.images, db.vocabBook, db.history, db.extras, db.settings], async () => {
+    // 图解词典单独管理（词典面板里删除），这里保留它的元信息
+    const dict = await db.settings.get('dict');
     await Promise.all([db.levels.clear(), db.images.clear(), db.vocabBook.clear(), db.history.clear(), db.extras.clear(), db.settings.clear()]);
+    if (dict) await db.settings.put(dict);
   });
 }

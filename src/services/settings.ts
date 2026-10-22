@@ -37,6 +37,12 @@ export interface AppSettings {
   hintsPerLevel: number;
   showTimer: boolean;
   confetti: boolean;
+  /** GitHub 私有仓库同步（令牌只存本机浏览器，不进存档导出） */
+  ghToken: string;
+  /** owner/repo */
+  ghRepo: string;
+  /** 仓库里词典包的路径 */
+  ghDictPath: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -60,6 +66,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   hintsPerLevel: 3,
   showTimer: true,
   confetti: true,
+  ghToken: '',
+  ghRepo: '',
+  ghDictPath: 'pack/dk.pwdict',
 };
 
 const STORAGE_KEY = 'picword.settings.v1';

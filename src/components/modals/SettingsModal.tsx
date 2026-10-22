@@ -1,5 +1,5 @@
 // ============================================================
-// ⚙️ 设置：AI 模型（全部供应商）/ 网络通道 / 图库 / 发音 / 玩法 / 数据存档
+// ⚙️ 设置：AI 模型（全部供应商）/ 网络通道 / 图库 / 发音 / 玩法 / GitHub 同步 / 数据存档
 // ============================================================
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -12,6 +12,7 @@ import { clearAllData, downloadBackup, importBackup } from '../../services/backu
 import { Button, Modal, Spinner, cx } from '../ui/primitives';
 import { useToast } from '../ui/Toast';
 import { useDialog } from '../ui/Dialog';
+import { GitHubSyncSection } from './GitHubSync';
 
 function Section({ title, children, hint }: { title: string; children: ReactNode; hint?: ReactNode }) {
   return (
@@ -325,6 +326,13 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
               过关彩带
             </label>
           </div>
+        </Section>
+
+        <Section
+          title="☁️ GitHub 私有仓库同步"
+          hint="把生词本、关卡库、战绩同步到你自己的 GitHub 私有仓库，换设备也不丢；也可以从仓库直接下载图解词典。浏览器直连 GitHub，国内可能需要开代理。"
+        >
+          <GitHubSyncSection />
         </Section>
 
         <Section title="💾 存档（IndexedDB）" hint={`导出包含关卡库（含图片）、生词本、通关记录、AI 沉淀词；API Key 不会导出。当前浏览器存储占用：${usage || '—'}`}>
