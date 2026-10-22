@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { deleteDict, importDictPack, plainPinyin, readPackHeader, searchDict } from '../src/services/dictionary';
+import { deleteDict, importDictPack, pinyinPrefix, plainPinyin, readPackHeader, searchDict, searchDictRanked } from '../src/services/dictionary';
+import { lookupGameVocab, onlineDictLinks } from '../src/services/vocabLookup';
 import { db, getSetting } from '../src/services/db';
 import type { DictEntry, DictMeta } from '../src/types';
 
@@ -90,5 +91,51 @@ describe('.pwdict 词典包', () => {
     expect(await db.dictPages.count()).toBe(0);
     expect(await db.dictEntries.count()).toBe(0);
     expect(await getSetting('dict', null)).toBeNull();
+  });
+});
+
+describe('中文排序与拼音音节', () => {
+  const SHEEP: DictEntry[] = [
+    { id: 1, en: 'okra', zh: '羊角豆', py: 'yángjiǎodòu', page: 124 },
+    { id: 2, en: 'cardigan', zh: '羊毛衫', py: 'yángmáoshān', page: 34 },
+    { id: 3, en: 'sheep', zh: '绵羊', py: 'miányáng', page: 187 },
+    { id: 4, en: 'goat', zh: '山羊', py: 'shānyáng', page: 187 },
+    { id: 5, en: 'kid', zh: '小山羊', py: 'xiǎoshānyáng', page: 187 },
+    { id: 6, en: 'flock', zh: '羊群', py: 'yángqún', page: 185 },
+    { id: 7, en: 'bowl', zh: '烟锅', py: 'yānguō', page: 114 },
+  ];
+  it('“羊”：以羊结尾的（绵羊、山羊）排在以羊开头的（羊群、羊角豆）前面，同档中文短的优先、再按页码', () => {
+    expect(searchDict(SHEEP, '羊').map((e) => e.zh)).toEqual(['绵羊', '山羊', '小山羊', '羊群', '羊毛衫', '羊角豆']);
+  });
+  it('拼音 yang：停在音节边界的在前，yān|guō 这种跨音节的排最后', () => {
+    const zh = searchDict(SHEEP, 'yang').map((e) => e.zh);
+    expect(zh.at(-1)).toBe('烟锅');
+    expect(zh.slice(0, 3).sort()).toEqual(['羊群', '羊角豆', '羊毛衫'].sort());
+  });
+  it('pinyinPrefix', () => {
+    expect(pinyinPrefix('yángjiǎodòu', 'yang')).toBe(2);
+    expect(pinyinPrefix('yānguō', 'yang')).toBe(1);
+    expect(pinyinPrefix('yānguō', 'yanguo')).toBe(2);
+    expect(pinyinPrefix('miányáng', 'yang')).toBe(0);
+  });
+  it('searchDictRanked 给出档位：完全一致为 0', () => {
+    expect(searchDictRanked(SHEEP, 'sheep')[0]).toMatchObject({ rank: 0 });
+    expect(searchDictRanked(SHEEP, '羊')[0].rank).toBe(1);
+  });
+});
+
+describe('游戏词库释义 / 在线词典', () => {
+  it('英文按词形还原匹配内置关卡词库（含同义词）', async () => {
+    const hits = await lookupGameVocab('tomatoes');
+    expect(hits[0]).toMatchObject({ word: 'tomato', meaning: '番茄' });
+    expect((await lookupGameVocab('noodle')).some((h) => h.word === 'spaghetti')).toBe(true);
+  });
+  it('中文按释义包含匹配；查不到返回空', async () => {
+    expect((await lookupGameVocab('番茄')).some((h) => h.word === 'tomato')).toBe(true);
+    expect(await lookupGameVocab('zzzqqq')).toEqual([]);
+  });
+  it('在线词典链接会转义', () => {
+    expect(onlineDictLinks('ice cream')[0].url).toBe('https://dict.youdao.com/result?word=ice%20cream&lang=en');
+    expect(onlineDictLinks('羊')[1].url).toBe('https://cn.bing.com/dict/search?q=%E7%BE%8A');
   });
 });

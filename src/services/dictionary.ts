@@ -100,19 +100,39 @@ export function plainPinyin(s: string): string {
 
 const hasCJK = (s: string) => /[㐀-鿿]/.test(s);
 
+const VOWEL = /[aeiouv]/;
+
 /**
- * 按相关度排序返回匹配词条：
- *   0 完全命中（含单复数 / 时态还原、英美拼写）  1 开头匹配  2 整词包含  3 子串包含
- * 中文查询匹配 zh；英文查询同时匹配 en 和（去声调的）拼音。
+ * 拼音前缀匹配的强度：2 = 停在音节边界（yang → yáng|jiǎo），1 = 可能截走了下一个音节的声母
+ * （yang → yān|guō，后面紧跟元音），0 = 不匹配。不用音节表，按“声调字母 + 后一个字母”判断。
  */
-export function searchDict(entries: DictEntry[], query: string, limit = 50): DictEntry[] {
+export function pinyinPrefix(entryPy: string, q: string): 0 | 1 | 2 {
+  const p = plainPinyin(entryPy);
+  if (q.length < 2 || !p.startsWith(q)) return 0;
+  const next = p[q.length];
+  return next === undefined || !VOWEL.test(next) ? 2 : 1;
+}
+
+export interface RankedEntry {
+  e: DictEntry;
+  /** 0 完全一致；数字越小越相关 */
+  rank: number;
+}
+
+/**
+ * 按相关度排序返回匹配词条。
+ * 英文：0 完全命中（含单复数 / 时态还原、英美拼写）→ 1 开头 → 2 整词包含 → 3 子串 / 拼音（音节边界）→ 4 拼音（可能跨音节）
+ * 中文：0 完全一致 → 1 以查询词结尾（中心词在后：绵羊、山羊）→ 2 以查询词开头（羊羔、羊群）→ 3 包含；同档中文越短越靠前
+ */
+export function searchDictRanked(entries: DictEntry[], query: string, limit = 50): RankedEntry[] {
   const q = query.trim();
   if (!q) return [];
-  const scored: { e: DictEntry; rank: number }[] = [];
-  if (hasCJK(q)) {
+  const scored: RankedEntry[] = [];
+  const cjk = hasCJK(q);
+  if (cjk) {
     for (const e of entries) {
       const zh = e.zh;
-      const rank = zh === q ? 0 : zh.startsWith(q) ? 1 : zh.includes(q) ? 2 : -1;
+      const rank = zh === q ? 0 : zh.endsWith(q) ? 1 : zh.startsWith(q) ? 2 : zh.includes(q) ? 3 : -1;
       if (rank >= 0) scored.push({ e, rank });
     }
   } else {
@@ -128,10 +148,18 @@ export function searchDict(entries: DictEntry[], query: string, limit = 50): Dic
       else if (forms.some((f) => en.startsWith(f))) rank = 1;
       else if (forms.some((f) => ` ${en} `.includes(` ${f} `))) rank = 2;
       else if (n.length >= 3 && en.includes(n)) rank = 3;
-      else if (py.length >= 2 && e.py && plainPinyin(e.py).startsWith(py)) rank = 3;
+      else if (e.py) {
+        const m = pinyinPrefix(e.py, py);
+        if (m) rank = m === 2 ? 3 : 4;
+      }
       if (rank >= 0) scored.push({ e, rank });
     }
   }
-  scored.sort((a, b) => a.rank - b.rank || a.e.en.length - b.e.en.length || a.e.page - b.e.page);
-  return scored.slice(0, limit).map((x) => x.e);
+  const len = (x: RankedEntry) => (cjk ? x.e.zh.length : x.e.en.length);
+  scored.sort((a, b) => a.rank - b.rank || len(a) - len(b) || a.e.page - b.e.page);
+  return scored.slice(0, limit);
+}
+
+export function searchDict(entries: DictEntry[], query: string, limit = 50): DictEntry[] {
+  return searchDictRanked(entries, query, limit).map((x) => x.e);
 }
