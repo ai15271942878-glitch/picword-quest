@@ -9,10 +9,11 @@ import { PROVIDERS, PROVIDER_LIST, type ProviderId } from '../../services/llm/pr
 import { resolveAiConfig, testConnection } from '../../services/llm/client';
 import { useDueCount, useVocabCount } from '../../services/collections';
 import { difficultyOf } from '../../engine/scoring';
+import { cloudConfigured } from '../../services/cloudConfig';
 import { Button, Spinner, cx } from '../ui/primitives';
 import { useToast } from '../ui/Toast';
 
-export type ModalKey = 'ai' | 'custom' | 'library' | 'vocab' | 'review' | 'stats' | 'settings' | 'help' | null;
+export type ModalKey = 'ai' | 'custom' | 'library' | 'vocab' | 'review' | 'stats' | 'settings' | 'cloud' | 'help' | null;
 
 export function Header({ onOpen, onToggleDict }: { onOpen: (m: ModalKey) => void; onToggleDict: () => void }) {
   const { nextRandom, phase } = useGame();
@@ -51,6 +52,11 @@ export function Header({ onOpen, onToggleDict }: { onOpen: (m: ModalKey) => void
           📖 图解词典
         </Button>
         <Button onClick={() => onOpen('stats')}>📈 战绩</Button>
+        {cloudConfigured() && (
+          <Button onClick={() => onOpen('cloud')} title="云端账号：存档和词典存到云端">
+            ☁️ 账号
+          </Button>
+        )}
         <Button onClick={() => onOpen('settings')} title="设置">
           ⚙️
         </Button>

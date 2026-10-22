@@ -163,3 +163,26 @@ export function searchDictRanked(entries: DictEntry[], query: string, limit = 50
 export function searchDict(entries: DictEntry[], query: string, limit = 50): DictEntry[] {
   return searchDictRanked(entries, query, limit).map((x) => x.e);
 }
+
+// ------------------------------------------------------------
+// 反向打包：把本机已导入的词典重新打成 .pwdict（上传云端用，不需要原文件）
+// ------------------------------------------------------------
+
+export async function exportDictPack(): Promise<Blob | null> {
+  const meta = await getSetting<DictMeta | null>('dict', null);
+  if (!meta) return null;
+  const pages = await db.dictPages.orderBy('page').toArray();
+  const entries = await db.dictEntries.toArray();
+  let offset = 0;
+  const pageMeta = pages.map((p) => {
+    const m = { page: p.page, offset, length: p.blob.size, mime: p.blob.type || 'image/jpeg', width: p.width, height: p.height, title: p.title };
+    offset += p.blob.size;
+    return m;
+  });
+  const header = new TextEncoder().encode(
+    JSON.stringify({ name: meta.name, pages: pageMeta, entries: entries.map(({ en, zh, py, page, box }) => ({ en, zh, py, page, box })) }),
+  );
+  const len = new Uint8Array(4);
+  new DataView(len.buffer).setUint32(0, header.length, true);
+  return new Blob([new TextEncoder().encode(MAGIC), len, header, ...pages.map((p) => p.blob)]);
+}

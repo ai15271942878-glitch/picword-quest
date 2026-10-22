@@ -17,6 +17,7 @@ const ReviewModal = lazy(() => import('./components/modals/VocabModals').then((m
 const SettingsModal = lazy(() => import('./components/modals/SettingsModal').then((m) => ({ default: m.SettingsModal })));
 const StatsModal = lazy(() => import('./components/modals/MiscModals').then((m) => ({ default: m.StatsModal })));
 const DictDrawer = lazy(() => import('./components/modals/DictDrawer').then((m) => ({ default: m.DictDrawer })));
+const CloudModal = lazy(() => import('./components/modals/CloudModal').then((m) => ({ default: m.CloudModal })));
 const HelpModal = lazy(() => import('./components/modals/MiscModals').then((m) => ({ default: m.HelpModal })));
 
 type Mountable = Exclude<ModalKey, null> | 'collect' | 'dict';
@@ -86,6 +87,7 @@ export default function App() {
       {lazyModal('review', <ReviewModal open={modal === 'review'} onClose={() => setModal('vocab')} />)}
       {lazyModal('stats', <StatsModal open={modal === 'stats'} onClose={close} />)}
       {lazyModal('settings', <SettingsModal open={modal === 'settings'} onClose={close} />)}
+      {lazyModal('cloud', <CloudModal open={modal === 'cloud'} onClose={close} />)}
       {lazyModal('help', <HelpModal open={modal === 'help'} onClose={close} />)}
       {lazyModal('dict', <DictDrawer open={dictOpen} onClose={closeDict} />)}
       {lazyModal('collect', <CollectLevelDialog level={session?.level ?? null} open={collectOpen} onClose={() => setCollectOpenRaw(false)} />)}
