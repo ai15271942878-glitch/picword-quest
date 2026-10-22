@@ -78,8 +78,8 @@ def clean_en(s):
     return s.lower() if s.isupper() and len(s) > 3 else s
 
 
-# 同一行的写法：“骨骼 gǔgé • skeleton”“米饭 mǐfàn I rice”（小标题、菜单、列表）
-INLINE = re.compile(r"^([\u3400-\u9fff（）()，、]+)\s*([a-zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü’' ]+?)\s*[I|•]\s*([A-Za-z].*)$")
+# 同一行的写法：“骨骼 gǔgé • skeleton”“米饭 mǐfàn I rice”“20 尼日利亚 nírìlìyà • Nigeria”（小标题、菜单、列表、地图编号）
+INLINE = re.compile(r"^(?:\d+\s*)?([\u3400-\u9fff（）()，、]+)\s*([a-zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü’' ]+?)\s*[I|•]\s*([A-Za-z].*)$")
 
 
 def inline_entries(lines):
