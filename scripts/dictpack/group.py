@@ -78,6 +78,26 @@ def clean_en(s):
     return s.lower() if s.isupper() and len(s) > 3 else s
 
 
+# 同一行的写法：“骨骼 gǔgé • skeleton”“米饭 mǐfàn I rice”（小标题、菜单、列表）
+INLINE = re.compile(r"^([\u3400-\u9fff（）()，、]+)\s*([a-zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü’' ]+?)\s*[I|•]\s*([A-Za-z].*)$")
+
+
+def inline_entries(lines):
+    out = []
+    for l in lines:
+        m = INLINE.match(l["text"].strip())
+        if not m or not TONES.search(m.group(2)):
+            continue
+        zh, py, en = m.group(1), m.group(2).strip(), clean_en(m.group(3))
+        if zh == "中文" or not re.fullmatch(r"[A-Za-z][A-Za-z '\-/().,?!]{0,48}", en):
+            continue
+        pad = 0.006
+        out.append({"en": en, "zh": zh, "py": py,
+                    "box": [round(max(0, l["x0"] - pad), 4), round(max(0, l["y0"] - pad), 4),
+                            round(l["x1"] - l["x0"] + 2 * pad, 4), round(l["y1"] - l["y0"] + 2 * pad, 4)]})
+    return out
+
+
 def entries_of(lines):
     out = []
     for b in blocks_of([l for l in lines if not SKIP.search(l["text"])]):
@@ -121,6 +141,11 @@ def entries_of(lines):
             "py": " ".join(py) or None,
             "box": [round(max(0, x0 - pad), 4), round(max(0, y0 - pad), 4), round(x1 - x0 + 2 * pad, 4), round(y1 - y0 + 2 * pad, 4)],
         })
+    seen = {e["en"].lower() for e in out}
+    for e in inline_entries(lines):
+        if e["en"].lower() not in seen:
+            seen.add(e["en"].lower())
+            out.append(e)
     return out
 
 
