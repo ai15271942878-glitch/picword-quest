@@ -6,11 +6,12 @@
 //   history    通关记录
 //   extras     AI 判卷沉淀的“本关新词”（离线判卷时并入词库）
 //   settings   体积较大或结构化的状态（收藏夹列表、已玩种子、当前对局）
+//   dictPages / dictEntries  玩家导入的图解词典（整页图 + 词条索引；不进备份文件）
 // API Key 等轻量配置按 PRD 放在 localStorage（见 settings.ts）。
 // ============================================================
 
 import Dexie, { type EntityTable } from 'dexie';
-import type { HistoryRecord, ImageRecord, LevelExtras, SettingRow, StoredLevel, VocabItem } from '../types';
+import type { DictEntry, DictPage, HistoryRecord, ImageRecord, LevelExtras, SettingRow, StoredLevel, VocabItem } from '../types';
 
 export class PicWordDB extends Dexie {
   levels!: EntityTable<StoredLevel, 'id'>;
@@ -19,6 +20,8 @@ export class PicWordDB extends Dexie {
   history!: EntityTable<HistoryRecord, 'id'>;
   extras!: EntityTable<LevelExtras, 'levelId'>;
   settings!: EntityTable<SettingRow, 'key'>;
+  dictPages!: EntityTable<DictPage, 'page'>;
+  dictEntries!: EntityTable<DictEntry, 'id'>;
 
   constructor(name = 'picword-quest') {
     super(name);
@@ -29,6 +32,10 @@ export class PicWordDB extends Dexie {
       history: '++id, levelId, playedAt',
       extras: 'levelId',
       settings: 'key',
+    });
+    this.version(2).stores({
+      dictPages: 'page',
+      dictEntries: '++id, page',
     });
   }
 }

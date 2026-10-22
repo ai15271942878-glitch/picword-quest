@@ -14,7 +14,7 @@ import { useToast } from '../ui/Toast';
 
 export type ModalKey = 'ai' | 'custom' | 'library' | 'vocab' | 'review' | 'stats' | 'settings' | 'help' | null;
 
-export function Header({ onOpen }: { onOpen: (m: ModalKey) => void }) {
+export function Header({ onOpen, onToggleDict }: { onOpen: (m: ModalKey) => void; onToggleDict: () => void }) {
   const { nextRandom, phase } = useGame();
   const vocabCount = useVocabCount();
   const due = useDueCount();
@@ -46,6 +46,9 @@ export function Header({ onOpen }: { onOpen: (m: ModalKey) => void }) {
           🖼️ 生词本
           <span className="rounded-full bg-white/25 px-1.5 text-xs tabular-nums">{vocabCount}</span>
           {due > 0 && <span className="rounded-full bg-rose-500 px-1.5 text-[11px]">{due} 待复习</span>}
+        </Button>
+        <Button onClick={onToggleDict} title="查词：释义 + 整页插图">
+          📖 图解词典
         </Button>
         <Button onClick={() => onOpen('stats')}>📈 战绩</Button>
         <Button onClick={() => onOpen('settings')} title="设置">

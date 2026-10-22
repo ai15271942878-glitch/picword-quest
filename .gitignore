@@ -6,3 +6,8 @@ scripts/.work/
 Thumbs.db
 *.zip
 PLAN.md
+
+# 图解词典：PDF 原件与生成的词典包只留在本机，绝不提交
+*.pdf
+*.pwdict
+__pycache__/

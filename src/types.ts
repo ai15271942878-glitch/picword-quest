@@ -210,3 +210,34 @@ export interface SettingRow {
   key: string;
   value: unknown;
 }
+
+// ------------------------------------------------------------
+// 图解词典（玩家从本机导入的 .pwdict 词典包，只存在本机浏览器）
+// ------------------------------------------------------------
+
+/** 词典页上的一个词条：英文 + 中文 + 拼音，指向所在页及在页面上的位置 */
+export interface DictEntry {
+  id?: number;
+  en: string;
+  zh: string;
+  py?: string;
+  page: number;
+  /** 词条标签在页面上的位置（相对页面宽高的 0~1 比例：x, y, w, h），用于在整页图上框出 */
+  box?: [number, number, number, number];
+}
+
+export interface DictPage {
+  page: number;
+  blob: Blob;
+  width: number;
+  height: number;
+  /** 页眉标题（如“外表 · APPEARANCE”） */
+  title?: string;
+}
+
+export interface DictMeta {
+  name: string;
+  pageCount: number;
+  entryCount: number;
+  importedAt: number;
+}

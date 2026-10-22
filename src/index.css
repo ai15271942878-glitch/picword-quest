@@ -4,6 +4,7 @@
   --font-sans: 'Inter', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
   --animate-pop: pop 0.22s ease-out;
   --animate-shake: shake 0.35s ease-in-out;
+  --animate-slide-in: slide-in 0.22s ease-out;
 
   @keyframes pop {
     from {
@@ -12,6 +13,14 @@
     }
     to {
       opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
       transform: none;
     }
   }

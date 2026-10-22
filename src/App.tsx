@@ -5,6 +5,7 @@ import { AiBar, Header, RuleBanner, type ModalKey } from './components/game/TopB
 import { InputCard, SceneCard } from './components/game/PlayArea';
 import { ResultPanel } from './components/game/ResultPanel';
 import { useToast } from './components/ui/Toast';
+import { cx } from './components/ui/primitives';
 
 // 弹窗按需懒加载：首次打开时才下载对应代码，首屏更快
 const AiCreateModal = lazy(() => import('./components/modals/AiCreateModal').then((m) => ({ default: m.AiCreateModal })));
@@ -15,15 +16,17 @@ const VocabAlbumModal = lazy(() => import('./components/modals/VocabModals').the
 const ReviewModal = lazy(() => import('./components/modals/VocabModals').then((m) => ({ default: m.ReviewModal })));
 const SettingsModal = lazy(() => import('./components/modals/SettingsModal').then((m) => ({ default: m.SettingsModal })));
 const StatsModal = lazy(() => import('./components/modals/MiscModals').then((m) => ({ default: m.StatsModal })));
+const DictDrawer = lazy(() => import('./components/modals/DictDrawer').then((m) => ({ default: m.DictDrawer })));
 const HelpModal = lazy(() => import('./components/modals/MiscModals').then((m) => ({ default: m.HelpModal })));
 
-type Mountable = Exclude<ModalKey, null> | 'collect';
+type Mountable = Exclude<ModalKey, null> | 'collect' | 'dict';
 
 export default function App() {
   const { session, notice, clearNotice } = useGame();
   const toast = useToast();
   const [modal, setModalRaw] = useState<ModalKey>(null);
   const [collectOpen, setCollectOpenRaw] = useState(false);
+  const [dictOpen, setDictOpen] = useState(false);
   // 打开过的弹窗保持挂载（保留内部状态），没打开过的不加载
   const [mounted, setMounted] = useState<Set<Mountable>>(new Set());
   const mount = (k: Mountable) => setMounted((s) => (s.has(k) ? s : new Set(s).add(k)));
@@ -37,6 +40,11 @@ export default function App() {
     setCollectOpenRaw(true);
   }, []);
   const close = useCallback(() => setModalRaw(null), []);
+  const toggleDict = useCallback(() => {
+    mount('dict');
+    setDictOpen((v) => !v);
+  }, []);
+  const closeDict = useCallback(() => setDictOpen(false), []);
 
   useEffect(() => {
     if (notice) {
@@ -54,8 +62,8 @@ export default function App() {
   const lazyModal = (k: Mountable, node: ReactNode) => (mounted.has(k) ? <Suspense fallback={null}>{node}</Suspense> : null);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 px-3 py-4 sm:px-5 sm:py-6">
-      <Header onOpen={setModal} />
+    <div className={cx('mx-auto max-w-6xl space-y-4 px-3 py-4 sm:px-5 sm:py-6', dictOpen && 'xl:mr-[440px]')}>
+      <Header onOpen={setModal} onToggleDict={toggleDict} />
       <AiBar onOpenSettings={() => setModal('settings')} />
       <RuleBanner />
       <main className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] [&>*]:min-w-0">
@@ -79,6 +87,7 @@ export default function App() {
       {lazyModal('stats', <StatsModal open={modal === 'stats'} onClose={close} />)}
       {lazyModal('settings', <SettingsModal open={modal === 'settings'} onClose={close} />)}
       {lazyModal('help', <HelpModal open={modal === 'help'} onClose={close} />)}
+      {lazyModal('dict', <DictDrawer open={dictOpen} onClose={closeDict} />)}
       {lazyModal('collect', <CollectLevelDialog level={session?.level ?? null} open={collectOpen} onClose={() => setCollectOpenRaw(false)} />)}
     </div>
   );
