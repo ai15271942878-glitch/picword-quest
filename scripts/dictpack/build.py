@@ -10,6 +10,7 @@
     --ocr            强制 OCR（文字层有乱码时用）
     --ocr-dpi 200    OCR 时的渲染分辨率
     --review out.tsv 输出词条清单，便于人工检查
+    --skip 1-13      跳过这些页（封面、目录、使用说明；页码按合并后的连续编号，可写 1-13,20）
 
 .pwdict 格式见 src/services/dictionary.ts。词典内容受版权保护时，生成的文件只供自己使用，不要提交到仓库。
 """
@@ -37,7 +38,12 @@ def main():
     ap.add_argument("--ocr", action="store_true")
     ap.add_argument("--ocr-dpi", type=int, default=200)
     ap.add_argument("--review", default=None)
+    ap.add_argument("--skip", default="")
     args = ap.parse_args()
+    skip = set()
+    for part in filter(None, args.skip.split(",")):
+        a, _, b = part.partition("-")
+        skip.update(range(int(a), int(b or a) + 1))
 
     pages, entries, blobs = [], [], []
     offset = 0
@@ -47,6 +53,8 @@ def main():
         doc = pymupdf.open(path)
         for page in doc:
             page_no += 1
+            if page_no in skip:
+                continue
             lines, used_ocr = page_lines(page, force_ocr=args.ocr, dpi=args.ocr_dpi)
             ocr_pages += used_ocr
             found = entries_of(lines)

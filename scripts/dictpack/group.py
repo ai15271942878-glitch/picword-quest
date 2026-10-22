@@ -68,7 +68,11 @@ def clean_en(s):
 def entries_of(lines):
     out = []
     for b in blocks_of([l for l in lines if not SKIP.search(l["text"])]):
-        zh = "".join(l["text"] for l in b if CJK.search(l["text"])).strip()
+        zh_lines = [l["text"] for l in b if CJK.search(l["text"])]
+        # 正文标签的中文行是纯中文；混着字母的是目录页这类排版，不当作词条
+        if any(re.search(r"[A-Za-z]", t) for t in zh_lines):
+            continue
+        zh = re.sub(r"\s+", "", "".join(zh_lines))
         latin = [l["text"] for l in b if not CJK.search(l["text"])]
         if len(latin) >= 2:
             # 标签固定是“中文、拼音、英文”竖排：最后一行是英文，前面的是拼音（OCR 认错拼音也不影响）
