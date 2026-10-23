@@ -17,3 +17,12 @@ createRoot(document.getElementById('root')!).render(
     </ToastProvider>
   </StrictMode>,
 );
+
+// 生产环境注册 Service Worker：可“添加到主屏幕”、断网也能玩（dist/sw.js 由 server/swPlugin.ts 生成）
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      /* 不支持或被浏览器禁用时照常在线玩 */
+    });
+  });
+}

@@ -149,6 +149,18 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           </ol>
         </section>
         <section>
+          <h3 className="mb-1 font-bold text-slate-800">📲 装到手机桌面（像 App 一样玩）</h3>
+          <ul className="list-disc space-y-0.5 pl-5">
+            <li>
+              <b>安卓</b>（Chrome / Edge）：点顶部的「📲 安装 App」；没有这个按钮时，点浏览器菜单 ⋮ →「添加到主屏幕」或「安装应用」。
+            </li>
+            <li>
+              <b>苹果</b>（必须用 Safari）：点底部分享按钮 <span className="whitespace-nowrap">⬆️</span> →「添加到主屏幕」。
+            </li>
+            <li>装好后从桌面图标打开：全屏、没有地址栏；打开过一次后<b>断网也能玩内置关卡</b>（AI、云端同步需要联网）。</li>
+          </ul>
+        </section>
+        <section>
           <h3 className="mb-1 font-bold text-slate-800">🧮 计分规则（透明、可复算）</h3>
           <ul className="list-disc space-y-0.5 pl-5">
             <li>

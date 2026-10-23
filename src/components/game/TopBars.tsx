@@ -10,6 +10,7 @@ import { resolveAiConfig, testConnection } from '../../services/llm/client';
 import { useDueCount, useVocabCount } from '../../services/collections';
 import { difficultyOf } from '../../engine/scoring';
 import { cloudConfigured } from '../../services/cloudConfig';
+import { promptInstall, useCanInstall } from '../../services/install';
 import { Button, Spinner, cx } from '../ui/primitives';
 import { useToast } from '../ui/Toast';
 
@@ -19,6 +20,7 @@ export function Header({ onOpen, onToggleDict }: { onOpen: (m: ModalKey) => void
   const { nextRandom, phase } = useGame();
   const vocabCount = useVocabCount();
   const due = useDueCount();
+  const canInstall = useCanInstall();
   return (
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-3">
@@ -31,6 +33,11 @@ export function Header({ onOpen, onToggleDict }: { onOpen: (m: ModalKey) => void
         </div>
       </div>
       <nav className="flex flex-wrap gap-2">
+        {canInstall && (
+          <Button variant="success" onClick={() => void promptInstall()} title="安装到手机桌面，像 App 一样打开，断网也能玩">
+            📲 安装 App
+          </Button>
+        )}
         <Button variant="primary" onClick={() => void nextRandom()} disabled={phase === 'judging'} title="从内置关卡池随机抽一个没玩过的">
           🎲 随机下一关
         </Button>
