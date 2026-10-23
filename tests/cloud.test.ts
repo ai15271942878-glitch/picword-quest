@@ -163,3 +163,60 @@ describe('自动恢复', () => {
     await a;
   });
 });
+
+describe('设置（AI Key 等）跟着账号走', () => {
+  const store = new Map<string, string>();
+  beforeAll(() => {
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, String(v)),
+      removeItem: (k: string) => void store.delete(k),
+    });
+  });
+
+  it('首次：以前填过的 Key（没有修改时间）也会上传；GitHub 令牌不上传', async () => {
+    const settings = await import('../src/services/settings');
+    await cloud.signIn('a@b.c', 'right-pw');
+    settings.applyCloudSettings({ keys: { deepseek: 'sk-old' } }, 0); // 模拟“老设置”：有 Key、没有修改时间
+    store.delete('picword.settings.updatedAt');
+    settings.updateSettings({ ghToken: 'github_pat_secret' });
+    store.delete('picword.settings.updatedAt');
+
+    expect((await cloud.syncDataWithCloud()).settings).toBe('pushed');
+    const file = JSON.parse(await files.get('u1/settings.json')!.text());
+    expect(file.settings.keys).toEqual({ deepseek: 'sk-old' });
+    expect(file.settings.ghToken).toBeUndefined();
+    expect(file.updatedAt).toBe(settings.getSettingsUpdatedAt());
+    // 再同步一次：两边一样，什么都不做
+    expect(await cloud.syncSettingsNow()).toBe('same');
+  });
+
+  it('另一台设备改得更新 → 拉取到本机，本机的 GitHub 令牌保留', async () => {
+    const settings = await import('../src/services/settings');
+    await cloud.signIn('a@b.c', 'right-pw');
+    settings.updateSettings({ keys: { deepseek: 'sk-mine' }, ghToken: 'github_pat_local' });
+    await cloud.syncSettingsNow();
+
+    const newer = { updatedAt: settings.getSettingsUpdatedAt() + 1000, settings: { keys: { qwen: 'sk-from-phone' }, provider: 'qwen', aiEnabled: true } };
+    files.set('u1/settings.json', new Blob([JSON.stringify(newer)]));
+    expect(await cloud.syncSettingsNow()).toBe('pulled');
+    const s = settings.getSettings();
+    expect(s.keys).toEqual({ qwen: 'sk-from-phone' });
+    expect(s.provider).toBe('qwen');
+    expect(s.ghToken).toBe('github_pat_local');
+  });
+
+  it('本机改得更新 → 上传覆盖云端', async () => {
+    const settings = await import('../src/services/settings');
+    await cloud.signIn('a@b.c', 'right-pw');
+    files.set('u1/settings.json', new Blob([JSON.stringify({ updatedAt: 1, settings: { keys: { deepseek: 'old' } } })]));
+    settings.updateSettings({ keys: { deepseek: 'sk-new' } });
+    expect(await cloud.syncSettingsNow()).toBe('pushed');
+    expect(JSON.parse(await files.get('u1/settings.json')!.text()).settings.keys).toEqual({ deepseek: 'sk-new' });
+  });
+
+  it('Key 不进可导出的存档文件', async () => {
+    const { buildBackup } = await import('../src/services/backup');
+    expect(JSON.stringify(await buildBackup())).not.toContain('sk-');
+  });
+});

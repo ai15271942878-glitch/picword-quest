@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useGame } from './game/GameContext';
 import { gcImages } from './services/db';
 import { AiBar, Header, RuleBanner, type ModalKey } from './components/game/TopBars';
@@ -7,6 +7,7 @@ import { ResultPanel } from './components/game/ResultPanel';
 import { useToast } from './components/ui/Toast';
 import { cx } from './components/ui/primitives';
 import { cloudConfigured, hasCloudSession } from './services/cloudConfig';
+import { useSettings } from './services/settings';
 
 // 弹窗按需懒加载：首次打开时才下载对应代码，首屏更快
 const AiCreateModal = lazy(() => import('./components/modals/AiCreateModal').then((m) => ({ default: m.AiCreateModal })));
@@ -64,6 +65,23 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // 设置改了（如填了 API Key）：登录了云端账号就 3 秒后存到账号里，换设备不用重填
+  const settings = useSettings();
+  const firstSettings = useRef(true);
+  useEffect(() => {
+    if (firstSettings.current) {
+      firstSettings.current = false;
+      return;
+    }
+    if (!cloudConfigured() || !hasCloudSession()) return;
+    const t = setTimeout(() => {
+      void import('./services/cloud').then((m) => m.syncSettingsNow()).catch(() => {
+        /* 下次打开时会再同步 */
+      });
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [settings]);
+
   // 启动时清理没人引用的图片
   useEffect(() => {
     const t = setTimeout(() => void gcImages(), 4000);
@@ -84,7 +102,7 @@ export default function App() {
       <ResultPanel onCollectLevel={openCollect} />
 
       <footer className="pb-2 pt-4 text-center text-xs text-slate-400">
-        PicWord Quest · 数据只保存在本机浏览器（IndexedDB）· 真实照片来自 CC0 / CC 图库 ·{' '}
+        PicWord Quest · 数据保存在本机浏览器，登录「☁️ 账号」后同步到你的账号 · 真实照片来自 CC0 / CC 图库 ·{' '}
         <button type="button" className="cursor-pointer underline hover:text-slate-600" onClick={() => setModal('help')}>
           玩法说明
         </button>

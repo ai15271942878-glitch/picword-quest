@@ -90,15 +90,57 @@ export function getSettings(): AppSettings {
   return current;
 }
 
-export function updateSettings(patch: Partial<AppSettings> | ((s: AppSettings) => Partial<AppSettings>)) {
-  const p = typeof patch === 'function' ? patch(current) : patch;
-  current = { ...current, ...p };
+/** 本机设置最后一次被修改的时间（云端同步时“以最后修改的设备为准”） */
+const UPDATED_AT_KEY = 'picword.settings.updatedAt';
+
+export function getSettingsUpdatedAt(): number {
+  try {
+    return Number(localStorage.getItem(UPDATED_AT_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** 只记修改时间、不改设置（首次上传旧设置到云端时，让两边时间一致） */
+export function setSettingsUpdatedAt(ts: number) {
+  try {
+    localStorage.setItem(UPDATED_AT_KEY, String(ts));
+  } catch {
+    /* ignore */
+  }
+}
+
+function save(updatedAt: number) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+    localStorage.setItem(UPDATED_AT_KEY, String(updatedAt));
   } catch {
     /* 隐私模式等写不进去时忽略 */
   }
   listeners.forEach((l) => l());
+}
+
+export function updateSettings(patch: Partial<AppSettings> | ((s: AppSettings) => Partial<AppSettings>)) {
+  const p = typeof patch === 'function' ? patch(current) : patch;
+  current = { ...current, ...p };
+  save(Date.now());
+}
+
+/** 只属于本机、不跟着云端账号同步的设置：GitHub 令牌权限大（能读写私有仓库），留在本机 */
+export const LOCAL_ONLY_SETTINGS: (keyof AppSettings)[] = ['ghToken', 'ghRepo', 'ghDictPath'];
+
+/** 可同步到云端账号的设置（去掉本机专属项） */
+export function syncableSettings(): Partial<AppSettings> {
+  const out: Partial<AppSettings> = { ...current };
+  for (const k of LOCAL_ONLY_SETTINGS) delete out[k];
+  return out;
+}
+
+/** 应用云端设置：保留本机专属项，修改时间记为云端的时间（不算本机修改） */
+export function applyCloudSettings(remote: Partial<AppSettings>, updatedAt: number) {
+  const keep = Object.fromEntries(LOCAL_ONLY_SETTINGS.map((k) => [k, current[k]]));
+  current = { ...DEFAULT_SETTINGS, ...remote, ...keep };
+  save(updatedAt);
 }
 
 function subscribe(cb: () => void) {

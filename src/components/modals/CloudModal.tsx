@@ -112,9 +112,10 @@ function Account({ user }: { user: User }) {
     run('同步存档中…', async () => {
       const r = await syncDataWithCloud();
       const p = r.pulled;
-      return p
+      const st = r.settings === 'pulled' ? '；已从云端恢复设置（AI 模型、API Key 等）' : r.settings === 'pushed' ? '；设置（AI 模型、API Key 等）已存到云端' : '';
+      return (p
         ? `同步完成：从云端合并了 关卡 ${p.levels} · 生词 ${p.vocab} · 记录 ${p.history}，并已上传（${kb(r.pushedBytes)}）`
-        : `首次同步：已把本机存档上传到云端（${kb(r.pushedBytes)}）`;
+        : `首次同步：已把本机存档上传到云端（${kb(r.pushedBytes)}）`) + st;
     });
 
   const uploadDict = () =>
@@ -142,7 +143,7 @@ function Account({ user }: { user: User }) {
       </div>
 
       <section className="space-y-2 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-        <h3 className="font-bold text-slate-800">💾 存档（生词本 / 关卡库 / 战绩）</h3>
+        <h3 className="font-bold text-slate-800">💾 存档（生词本 / 关卡库 / 战绩 / AI 设置）</h3>
         <p className="text-xs text-slate-500">先把云端的存档合并进这台设备，再把合并后的结果传回云端。两台设备各点一次就互相同步了。</p>
         <Button variant="success" onClick={() => void syncData()} disabled={!!busy}>
           🔄 同步存档

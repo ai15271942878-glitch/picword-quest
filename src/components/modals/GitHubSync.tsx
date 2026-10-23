@@ -153,7 +153,7 @@ export function GitHubSyncSection() {
           <li>Permissions → Repository permissions → Contents 选「Read and write」</li>
           <li>点 Generate token，复制以 github_pat_ 开头的令牌粘贴到上面</li>
         </ol>
-        <p className="mt-1">令牌只保存在这个浏览器里，不会进存档文件；别把它发给别人。</p>
+        <p className="mt-1">令牌只保存在这个浏览器里，不会进存档文件，也不会同步到云端账号；别把它发给别人。</p>
       </details>
       <div className="flex flex-wrap items-center gap-2">
         <span className="w-20 font-semibold">词典路径</span>

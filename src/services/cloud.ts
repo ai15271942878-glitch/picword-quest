@@ -10,6 +10,15 @@ import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { buildBackup, importBackup, type ImportSummary } from './backup';
 import { exportDictPack, importDictPack } from './dictionary';
 import { getSetting } from './db';
+import {
+  DEFAULT_SETTINGS,
+  LOCAL_ONLY_SETTINGS,
+  applyCloudSettings,
+  getSettingsUpdatedAt,
+  setSettingsUpdatedAt,
+  syncableSettings,
+  type AppSettings,
+} from './settings';
 import type { DictMeta } from '../types';
 
 import { AUTH_STORAGE_KEY, CLOUD_ANON_KEY, CLOUD_URL, PUBLIC_SITE_URL, cloudConfigured } from './cloudConfig';
@@ -106,13 +115,61 @@ async function upload(sb: SupabaseClient, path: string, body: Blob, contentType:
 // 存档：拉取合并 → 上传
 // ------------------------------------------------------------
 
-export async function syncDataWithCloud(): Promise<{ pulled: ImportSummary | null; pushedBytes: number }> {
+export async function syncDataWithCloud(): Promise<{ pulled: ImportSummary | null; pushedBytes: number; settings: SettingsSync }> {
   const { sb, uid } = await requireUser();
   const remote = await download(sb, `${uid}/data.json`);
   const pulled = remote ? await importBackup(await remote.text(), 'merge') : null;
   const json = JSON.stringify(await buildBackup());
   await upload(sb, `${uid}/data.json`, new Blob([json], { type: 'application/json' }), 'application/json');
-  return { pulled, pushedBytes: json.length };
+  const settings = await syncSettingsWithCloud(sb, uid);
+  return { pulled, pushedBytes: json.length, settings };
+}
+
+// ------------------------------------------------------------
+// 设置（AI 供应商 / API Key / 模型 / 图库 Key / 发音 / 玩法）：存到账号里，换设备不用重填。
+// 单独存 settings.json（不进可导出的存档文件，免得分享存档时泄露 Key）；以最后修改的设备为准。
+// GitHub 令牌等本机专属项不同步（见 LOCAL_ONLY_SETTINGS）。
+// ------------------------------------------------------------
+
+export type SettingsSync = 'pulled' | 'pushed' | 'same';
+
+/** 设置改动后立即同步（只同步设置，不动存档） */
+export async function syncSettingsNow(): Promise<SettingsSync | null> {
+  const user = await currentUser();
+  if (!user) return null;
+  return syncSettingsWithCloud(await getCloud(), user.id);
+}
+
+interface CloudSettingsFile {
+  updatedAt: number;
+  settings: Partial<AppSettings>;
+}
+
+function isCustomized(s: Partial<AppSettings>): boolean {
+  const defaults: Partial<AppSettings> = { ...DEFAULT_SETTINGS };
+  for (const k of LOCAL_ONLY_SETTINGS) delete defaults[k];
+  return JSON.stringify(s) !== JSON.stringify(defaults);
+}
+
+export async function syncSettingsWithCloud(sb: SupabaseClient, uid: string): Promise<SettingsSync> {
+  const path = `${uid}/settings.json`;
+  const blob = await download(sb, path);
+  const remote = blob ? (JSON.parse(await blob.text()) as CloudSettingsFile) : null;
+  const localTs = getSettingsUpdatedAt();
+  if (remote && remote.updatedAt > localTs) {
+    applyCloudSettings(remote.settings, remote.updatedAt);
+    return 'pulled';
+  }
+  const local = syncableSettings();
+  if ((remote && localTs > remote.updatedAt) || (!remote && isCustomized(local))) {
+    // 以前就填过 Key 的老设置没有修改时间：按现在算，两边记成同一个时间
+    const ts = localTs || Date.now();
+    if (!localTs) setSettingsUpdatedAt(ts);
+    const file: CloudSettingsFile = { updatedAt: ts, settings: local };
+    await upload(sb, path, new Blob([JSON.stringify(file)], { type: 'application/json' }), 'application/json');
+    return 'pushed';
+  }
+  return 'same';
 }
 
 // ------------------------------------------------------------
@@ -183,6 +240,7 @@ export function autoRestore(notify: Notify): Promise<void> {
     try {
       if (!(await currentUser())) return;
       const r = await syncDataWithCloud();
+      if (r.settings === 'pulled') notify('☁️ 已从云端恢复设置（AI 模型、API Key 等）', 'success');
       if (r.pulled && r.pulled.levels + r.pulled.vocab + r.pulled.history > 0) {
         notify(`☁️ 已从云端同步：关卡 ${r.pulled.levels} · 生词 ${r.pulled.vocab} · 记录 ${r.pulled.history}`, 'success');
       }

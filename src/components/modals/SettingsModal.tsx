@@ -106,7 +106,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="⚙️ 设置" subtitle="所有配置和 Key 只保存在你这台电脑的浏览器里" width="max-w-4xl">
+    <Modal open={open} onClose={onClose} title="⚙️ 设置" subtitle="配置和 Key 保存在本机；登录「☁️ 账号」后会同步到你的账号（GitHub 令牌除外），换设备不用重填" width="max-w-4xl">
       <div className="space-y-4">
         <Section
           title="🤖 AI 模型"
@@ -335,7 +335,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
           <GitHubSyncSection />
         </Section>
 
-        <Section title="💾 存档（IndexedDB）" hint={`导出包含关卡库（含图片）、生词本、通关记录、AI 沉淀词；API Key 不会导出。当前浏览器存储占用：${usage || '—'}`}>
+        <Section title="💾 存档（IndexedDB）" hint={`导出包含关卡库（含图片）、生词本、通关记录、AI 沉淀词；API Key 不会导出（Key 只通过云端账号同步）。当前浏览器存储占用：${usage || '—'}`}>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="primary" onClick={() => void doExport()} disabled={busy}>
               ⬇️ 导出存档 .json
