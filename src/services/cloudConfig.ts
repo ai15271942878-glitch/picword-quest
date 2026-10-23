@@ -15,3 +15,6 @@ export function hasCloudSession(): boolean {
     return false;
   }
 }
+
+/** 线上网址：注册确认邮件里的链接跳到这里（安卓 App 里 location 是 App 内部地址，邮箱里点开会打不开） */
+export const PUBLIC_SITE_URL = 'https://ai15271942878-glitch.github.io/picword-quest/';

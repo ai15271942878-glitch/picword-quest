@@ -12,7 +12,8 @@ import { exportDictPack, importDictPack } from './dictionary';
 import { getSetting } from './db';
 import type { DictMeta } from '../types';
 
-import { AUTH_STORAGE_KEY, CLOUD_ANON_KEY, CLOUD_URL, cloudConfigured } from './cloudConfig';
+import { AUTH_STORAGE_KEY, CLOUD_ANON_KEY, CLOUD_URL, PUBLIC_SITE_URL, cloudConfigured } from './cloudConfig';
+import { Capacitor } from '@capacitor/core';
 
 export { cloudConfigured };
 
@@ -49,7 +50,7 @@ export function cloudErrorText(e: unknown): string {
 
 export async function signUp(email: string, password: string): Promise<{ needConfirm: boolean }> {
   const sb = await getCloud();
-  const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } });
+  const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: Capacitor.isNativePlatform() ? PUBLIC_SITE_URL : location.origin + location.pathname } });
   if (error) throw error;
   // 开启了“邮箱验证”时不会直接返回会话
   return { needConfirm: !data.session };

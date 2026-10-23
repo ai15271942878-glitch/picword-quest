@@ -11,3 +11,7 @@ PLAN.md
 *.pdf
 *.pwdict
 __pycache__/
+
+# 安卓签名密钥只放私有仓库，绝不提交
+*.keystore
+*.jks

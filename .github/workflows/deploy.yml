@@ -1,4 +1,5 @@
-# 推送到 main 分支后：装依赖 → 跑测试 → 构建 → 发布到 GitHub Pages
+# 推送到 main 分支后：装依赖 → 跑测试 → 构建网页 → 打包安卓 APK → 一起发布到 GitHub Pages
+# APK 下载地址：<网站>/download/picword.apk（APK 打包失败不影响网页上线）
 # 首次使用：仓库 Settings → Pages → Build and deployment → Source 选 “GitHub Actions”
 name: Deploy to GitHub Pages
 
@@ -28,6 +29,29 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      # 安卓 APK：Capacitor 把 dist/ 装进原生外壳。runner 自带 JDK 21 和 Android SDK。
+      # 签名密钥来自仓库 Secrets；没配置时用临时调试密钥（能装，但每次构建签名不同，新版不能覆盖安装旧版）。
+      - name: Build Android APK
+        continue-on-error: true
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          APP_VERSION_CODE: ${{ github.run_number }}
+          APP_VERSION_NAME: 1.0.${{ github.run_number }}
+        run: |
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/release.keystore"
+          else
+            echo "::warning::没有配置签名密钥 Secrets，APK 使用临时调试签名"
+          fi
+          npx cap sync android
+          (cd android && ./gradlew assembleRelease --no-daemon)
+          mkdir -p dist/download
+          cp android/app/build/outputs/apk/release/app-release.apk dist/download/picword.apk
+          echo "{\"versionCode\":$APP_VERSION_CODE,\"versionName\":\"$APP_VERSION_NAME\"}" > dist/download/version.json
+          ls -la dist/download
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
