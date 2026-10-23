@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS, updateSettings, useSettings, type Transport } from '.
 import { PROVIDER_LIST, PROVIDERS, type ProviderId } from '../../services/llm/providers';
 import { resolveAiConfig, testConnection } from '../../services/llm/client';
 import { probeProxy } from '../../services/net';
-import { englishVoices, speak, ttsSupported } from '../../services/tts';
+import { englishVoices, speak, webSpeechSupported } from '../../services/tts';
 import { clearAllData, downloadBackup, importBackup } from '../../services/backup';
 import { Button, Modal, Spinner, cx } from '../ui/primitives';
 import { useToast } from '../ui/Toast';
@@ -281,7 +281,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
           </div>
         </Section>
 
-        <Section title="🔊 发音（美式英语 en-US）" hint={ttsSupported() ? 'Edge 浏览器自带的 “Natural” 神经语音最好听。' : '当前浏览器不支持语音合成。'}>
+        <Section title="🔊 发音（美式英语 en-US）" hint={webSpeechSupported() ? 'Edge 浏览器自带的 “Natural” 神经语音最好听。' : '使用手机系统的语音朗读；系统没有英语语音时自动改用有道在线发音（需联网）。'}>
           <div className="flex flex-wrap items-center gap-3">
             <select value={s.ttsVoice} onChange={(e) => updateSettings({ ttsVoice: e.target.value })} className={cx(input, 'max-w-[320px]')}>
               <option value="">自动选择最佳语音</option>
