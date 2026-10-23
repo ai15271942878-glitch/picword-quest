@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useBackClose } from '../../services/backButton';
 
 /** 过关彩带：intensity 1 = 普通过关，2 = 高分 / 满分 */
 export function fireConfetti(intensity: 1 | 2 = 1) {
@@ -62,6 +63,7 @@ export function Lightbox({ src, alt, onClose }: { src: string; alt: string; onCl
   const [scale, setScale] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  useBackClose(true, onClose);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();

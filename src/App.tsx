@@ -9,6 +9,7 @@ import { cx } from './components/ui/primitives';
 import { cloudConfigured, hasCloudSession } from './services/cloudConfig';
 import { useSettings } from './services/settings';
 import { Capacitor } from '@capacitor/core';
+import { EXIT_WINDOW_MS, initNativeBackButton } from './services/backButton';
 
 // 弹窗按需懒加载：首次打开时才下载对应代码，首屏更快
 const AiCreateModal = lazy(() => import('./components/modals/AiCreateModal').then((m) => ({ default: m.AiCreateModal })));
@@ -83,6 +84,17 @@ export default function App() {
     }, 3000);
     return () => clearTimeout(t);
   }, [settings]);
+
+  // 安卓返回键：关最上层；主页按两次退出
+  useEffect(() => {
+    let off: (() => void) | undefined;
+    let alive = true;
+    void initNativeBackButton((msg) => toast(msg, 'info', EXIT_WINDOW_MS)).then((f) => (alive ? (off = f) : f()));
+    return () => {
+      alive = false;
+      off?.();
+    };
+  }, [toast]);
 
   // 启动时清理没人引用的图片
   useEffect(() => {

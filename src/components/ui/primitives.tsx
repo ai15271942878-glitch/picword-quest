@@ -5,6 +5,7 @@
 import { useEffect, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { speak, ttsSupported } from '../../services/tts';
+import { useBackClose } from '../../services/backButton';
 import type { JudgeStatus, Tier } from '../../types';
 
 export const cx = (...a: (string | false | null | undefined)[]) => a.filter(Boolean).join(' ');
@@ -65,6 +66,7 @@ export function Modal({
   width?: string;
   children: ReactNode;
 }) {
+  useBackClose(open, onClose);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();

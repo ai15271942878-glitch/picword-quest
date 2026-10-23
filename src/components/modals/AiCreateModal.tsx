@@ -15,6 +15,7 @@ import type { AiLevelJson } from '../../services/llm/json';
 import { PROVIDER_LABEL, searchImages, type ImageCandidate } from '../../services/imageSearch';
 import { toChatImage } from '../../services/imageStore';
 import { AI_FOLDER, collectLevel } from '../../services/collections';
+import { isUsedImage, preferUnused, usedImageKeys } from '../../services/usedImages';
 import { Button, Modal, Spinner, cx } from '../ui/primitives';
 import { useToast } from '../ui/Toast';
 
@@ -41,6 +42,7 @@ export function AiCreateModal({ open, onClose, onOpenSettings, onCollect }: { op
   const [error, setError] = useState<string | null>(null);
   const [json, setJson] = useState<AiLevelJson | null>(null);
   const [cands, setCands] = useState<ImageCandidate[]>([]);
+  const [usedKeys, setUsedKeys] = useState<Set<string>>(new Set());
   const [chosen, setChosen] = useState(0);
   const [calibratedFor, setCalibratedFor] = useState<string | null>(null);
   const [kw, setKw] = useState('');
@@ -79,12 +81,18 @@ export function AiCreateModal({ open, onClose, onOpenSettings, onCollect }: { op
           : '\n可以换个检索词重试。';
       throw new Error(`没有检索到合适的真实照片${out.errors.length ? `（${out.errors.slice(0, 2).join('；')}）` : ''}。${hint}`);
     }
-    setCands(out.candidates);
+    // 防撞图：关卡库 / 内置总库里用过的照片排到最后
+    const used = await usedImageKeys();
+    setUsedKeys(used);
+    const { list, usedCount } = preferUnused(out.candidates, used);
+    setCands(list);
     setChosen(0);
     setKw(out.usedQuery);
-    setSearchNote(`检索词「${out.usedQuery}」找到 ${out.candidates.length} 张候选图${out.errors.length ? `（部分图库失败：${out.errors.length} 个）` : ''}`);
+    const usedNote =
+      usedCount === list.length ? `；⚠️ 全部 ${usedCount} 张都已经在关卡库里用过，建议换个检索词` : usedCount ? `；其中 ${usedCount} 张已用过，排在最后` : '';
+    setSearchNote(`检索词「${out.usedQuery}」找到 ${list.length} 张候选图${usedNote}${out.errors.length ? `（部分图库失败：${out.errors.length} 个）` : ''}`);
     setSteps((s) => ({ ...s!, search: 'done' }));
-    return out.candidates;
+    return list;
   }
 
   async function runVision(base: AiLevelJson, cand: ImageCandidate, signal: AbortSignal) {
@@ -260,16 +268,20 @@ export function AiCreateModal({ open, onClose, onOpenSettings, onCollect }: { op
                         📷 {pick.author} · {pick.license} · {pick.title}
                       </p>
                     )}
+                    {pick && isUsedImage(pick, usedKeys) && (
+                      <p className="mt-1 text-xs font-semibold text-amber-600">⚠️ 这张图已经在你的关卡库（或内置关卡）里用过了，换一张可以避免重复关卡</p>
+                    )}
                     <div className="mt-2 grid grid-cols-6 gap-1.5">
                       {cands.map((c, i) => (
                         <button
                           key={c.id}
                           type="button"
                           onClick={() => setChosen(i)}
-                          className={cx('aspect-[4/3] cursor-pointer overflow-hidden rounded-md ring-2 transition', i === chosen ? 'ring-emerald-500' : 'ring-transparent opacity-75 hover:opacity-100')}
+                          className={cx('relative aspect-[4/3] cursor-pointer overflow-hidden rounded-md ring-2 transition', i === chosen ? 'ring-emerald-500' : 'ring-transparent opacity-75 hover:opacity-100')}
                           title={`${c.title}（相关度 ${c.score}）`}
                         >
                           <img src={c.thumb} alt="" loading="lazy" className="h-full w-full object-cover" />
+                          {isUsedImage(c, usedKeys) && <span className="absolute inset-x-0 bottom-0 bg-black/60 text-center text-[10px] text-white">已用过</span>}
                         </button>
                       ))}
                     </div>

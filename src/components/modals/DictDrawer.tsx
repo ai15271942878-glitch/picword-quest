@@ -15,6 +15,7 @@ import { Button, Empty, SpeakButton, Spinner, cx } from '../ui/primitives';
 import { Lightbox } from '../ui/effects';
 import { useDialog } from '../ui/Dialog';
 import { useToast } from '../ui/Toast';
+import { useBackClose } from '../../services/backButton';
 import { DictSyncButton } from './GitHubSync';
 import { ghConfigOf, requestPersistentStorage } from '../../services/githubSync';
 import { useSettings } from '../../services/settings';
@@ -182,6 +183,9 @@ export function DictDrawer({ open, onClose }: { open: boolean; onClose: () => vo
   const dialog = useDialog();
   const [q, setQ] = useState('');
   const [picked, setPicked] = useState<DictEntry | null>(null);
+  // 返回键：先从单词详情回到结果列表，再关掉词典
+  useBackClose(open, onClose);
+  useBackClose(open && !!picked, () => setPicked(null));
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
