@@ -220,3 +220,31 @@ describe('设置（AI Key 等）跟着账号走', () => {
     expect(JSON.stringify(await buildBackup())).not.toContain('sk-');
   });
 });
+
+describe('AI 关卡存进个人关卡库，跟着账号走', () => {
+  it('存进「AI 生成」；内置总库不变；登录后自动同步到账号', async () => {
+    const store = new Map<string, string>([['picword.cloud.auth', '{}']]);
+    vi.stubGlobal('localStorage', {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, String(v)),
+      removeItem: (k: string) => void store.delete(k),
+    });
+    const { collectLevel, AI_FOLDER } = await import('../src/services/collections');
+    const { SEED_LEVELS } = await import('../src/data/seedLevels');
+    const { scheduleCloudSync } = await import('../src/services/cloudConfig');
+    await cloud.signIn('a@b.c', 'right-pw');
+    const seedCount = SEED_LEVELS.length;
+    const level = {
+      id: 'ai-test-1', source: 'ai' as const, title: '海边日落', sceneDesc: 'sunset', passCount: 3, fullCount: 5,
+      coreWords: [{ word: 'sunset', pos: 'n.', meaning: '日落', relevance: 95 }], advWords: [], weakWords: [], createdAt: 1,
+    };
+    await collectLevel(level, AI_FOLDER);
+    expect((await db.levels.get('ai-test-1'))?.folder).toBe('AI 生成');
+    expect(SEED_LEVELS.length).toBe(seedCount);
+
+    scheduleCloudSync(0);
+    await vi.waitFor(() => expect(files.has('u1/data.json')).toBe(true));
+    const uploaded = JSON.parse(await files.get('u1/data.json')!.text());
+    expect(uploaded.data.levels.map((l: { id: string }) => l.id)).toContain('ai-test-1');
+  });
+});

@@ -5,6 +5,7 @@
 // ============================================================
 
 import { useLiveQuery } from 'dexie-react-hooks';
+import { scheduleCloudSync } from './cloudConfig';
 import { db, getFolders, saveFolders } from './db';
 import { cacheRemoteImage } from './imageStore';
 import { initialSrs } from './srs';
@@ -68,6 +69,9 @@ export function useDueCount(): number {
 // 关卡库
 // ------------------------------------------------------------
 
+/** AI 造的关卡自动存进的文件夹（默认收藏夹之一） */
+export const AI_FOLDER = 'AI 生成';
+
 export async function collectLevel(level: Level, folder: string): Promise<StoredLevel> {
   const prev = await db.levels.get(level.id);
   const img = await ensureImageRef(level);
@@ -95,7 +99,13 @@ export async function collectLevel(level: Level, folder: string): Promise<Stored
   await db.levels.put(stored);
   const folders = await getFolders();
   if (!folders.includes(folder)) await saveFolders([...folders, folder]);
+  // 关卡库属于账号：登录了云端就同步上去，换设备也在
+  scheduleCloudSync();
   return stored;
+}
+
+export function useLibraryCount(): number {
+  return useLiveQuery(() => db.levels.count(), []) ?? 0;
 }
 
 export async function removeLevel(id: string) {

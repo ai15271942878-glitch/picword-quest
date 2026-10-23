@@ -7,7 +7,7 @@ import { useGame } from '../../game/GameContext';
 import { updateSettings, useSettings } from '../../services/settings';
 import { PROVIDERS, PROVIDER_LIST, type ProviderId } from '../../services/llm/providers';
 import { resolveAiConfig, testConnection } from '../../services/llm/client';
-import { useDueCount, useVocabCount } from '../../services/collections';
+import { useDueCount, useLibraryCount, useVocabCount } from '../../services/collections';
 import { difficultyOf } from '../../engine/scoring';
 import { cloudConfigured } from '../../services/cloudConfig';
 import { APK_URL, promptInstall, shouldOfferApk, useCanInstall } from '../../services/install';
@@ -21,6 +21,7 @@ export function Header({ onOpen, onToggleDict }: { onOpen: (m: ModalKey) => void
   const vocabCount = useVocabCount();
   const due = useDueCount();
   const canInstall = useCanInstall();
+  const libCount = useLibraryCount();
   return (
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-3">
@@ -58,6 +59,7 @@ export function Header({ onOpen, onToggleDict }: { onOpen: (m: ModalKey) => void
         </Button>
         <Button variant="warning" onClick={() => onOpen('library')}>
           📚 关卡库
+          <span className="rounded-full bg-white/25 px-1.5 text-xs tabular-nums">{libCount}</span>
         </Button>
         <Button variant="violet" onClick={() => onOpen('vocab')}>
           🖼️ 生词本

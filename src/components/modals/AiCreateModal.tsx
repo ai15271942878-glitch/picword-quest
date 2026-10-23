@@ -14,6 +14,7 @@ import { designLevel, levelFromJson, visionVocab, type Difficulty } from '../../
 import type { AiLevelJson } from '../../services/llm/json';
 import { PROVIDER_LABEL, searchImages, type ImageCandidate } from '../../services/imageSearch';
 import { toChatImage } from '../../services/imageStore';
+import { AI_FOLDER, collectLevel } from '../../services/collections';
 import { Button, Modal, Spinner, cx } from '../ui/primitives';
 import { useToast } from '../ui/Toast';
 
@@ -145,15 +146,21 @@ export function AiCreateModal({ open, onClose, onOpenSettings, onCollect }: { op
     await runVision(json, pick, ctrl.signal);
   };
 
-  const start = (collect: boolean) => {
+  /** AI 造的关卡自动存进关卡库「AI 生成」（连照片一起存，离线也能再玩；登录了云端会同步到账号）。chooseFolder：存好后弹出选文件夹 */
+  const start = (chooseFolder: boolean) => {
     if (!json || !pick) return;
     const level = levelFromJson(json, 'ai', {
       imageUrl: pick.url,
       credit: { provider: PROVIDER_LABEL[pick.provider], author: pick.author, license: pick.license, pageUrl: pick.pageUrl, title: pick.title },
     });
-    loadLevel(level, { toast: `✨ AI 关卡「${level.title}」已就绪，开始观察吧！` });
+    loadLevel(level, { toast: `✨ AI 关卡「${level.title}」已就绪，并已存进关卡库「${AI_FOLDER}」` });
     onClose();
-    if (collect) onCollect(level.id);
+    void collectLevel(level, AI_FOLDER).then(
+      () => chooseFolder && onCollect(level.id),
+      () => {
+        /* 保存失败不影响游戏；结果页还能手动收藏 */
+      },
+    );
     reset();
   };
 
@@ -293,11 +300,11 @@ export function AiCreateModal({ open, onClose, onOpenSettings, onCollect }: { op
                       </Button>
                     )}
                     <div className="flex flex-wrap gap-2 pt-2">
-                      <Button variant="success" size="lg" onClick={() => start(false)} disabled={running}>
+                      <Button variant="success" size="lg" onClick={() => start(false)} disabled={running} title="开始游戏；关卡自动存进关卡库「AI 生成」">
                         ▶ 开始挑战
                       </Button>
-                      <Button variant="warning" size="lg" onClick={() => start(true)} disabled={running} title="开始游戏并立即收藏到关卡库">
-                        ⭐ 开始并收藏
+                      <Button variant="warning" size="lg" onClick={() => start(true)} disabled={running} title="开始游戏，并把关卡存到你选的文件夹">
+                        📁 开始并选择文件夹
                       </Button>
                     </div>
                     <p className="text-xs text-slate-400">图不合适？点下面的缩略图换一张，或换检索词重搜。</p>
