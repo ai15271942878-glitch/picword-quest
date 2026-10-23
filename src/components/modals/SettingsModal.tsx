@@ -13,6 +13,8 @@ import { Button, Modal, Spinner, cx } from '../ui/primitives';
 import { useToast } from '../ui/Toast';
 import { useDialog } from '../ui/Dialog';
 import { GitHubSyncSection } from './GitHubSync';
+import { AppVersionSection } from './UpdateModal';
+import { isNativeApp } from '../../services/appUpdate';
 
 function Section({ title, children, hint }: { title: string; children: ReactNode; hint?: ReactNode }) {
   return (
@@ -327,6 +329,12 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
             </label>
           </div>
         </Section>
+
+        {isNativeApp() && (
+          <Section title="📱 App 版本" hint="有新版本时，打开 App 会自动提示；也可以手动检查。">
+            <AppVersionSection />
+          </Section>
+        )}
 
         <Section
           title="☁️ GitHub 私有仓库同步"

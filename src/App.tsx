@@ -8,6 +8,7 @@ import { useToast } from './components/ui/Toast';
 import { cx } from './components/ui/primitives';
 import { cloudConfigured, hasCloudSession } from './services/cloudConfig';
 import { useSettings } from './services/settings';
+import { Capacitor } from '@capacitor/core';
 
 // 弹窗按需懒加载：首次打开时才下载对应代码，首屏更快
 const AiCreateModal = lazy(() => import('./components/modals/AiCreateModal').then((m) => ({ default: m.AiCreateModal })));
@@ -20,6 +21,7 @@ const SettingsModal = lazy(() => import('./components/modals/SettingsModal').the
 const StatsModal = lazy(() => import('./components/modals/MiscModals').then((m) => ({ default: m.StatsModal })));
 const DictDrawer = lazy(() => import('./components/modals/DictDrawer').then((m) => ({ default: m.DictDrawer })));
 const CloudModal = lazy(() => import('./components/modals/CloudModal').then((m) => ({ default: m.CloudModal })));
+const AppUpdateWatcher = lazy(() => import('./components/modals/UpdateModal').then((m) => ({ default: m.AppUpdateWatcher })));
 const HelpModal = lazy(() => import('./components/modals/MiscModals').then((m) => ({ default: m.HelpModal })));
 
 type Mountable = Exclude<ModalKey, null> | 'collect' | 'dict';
@@ -116,6 +118,11 @@ export default function App() {
       {lazyModal('stats', <StatsModal open={modal === 'stats'} onClose={close} />)}
       {lazyModal('settings', <SettingsModal open={modal === 'settings'} onClose={close} />)}
       {lazyModal('cloud', <CloudModal open={modal === 'cloud'} onClose={close} />)}
+      {Capacitor.isNativePlatform() && (
+        <Suspense fallback={null}>
+          <AppUpdateWatcher />
+        </Suspense>
+      )}
       {lazyModal('help', <HelpModal open={modal === 'help'} onClose={close} />)}
       {lazyModal('dict', <DictDrawer open={dictOpen} onClose={closeDict} />)}
       {lazyModal('collect', <CollectLevelDialog level={session?.level ?? null} open={collectOpen} onClose={() => setCollectOpenRaw(false)} />)}

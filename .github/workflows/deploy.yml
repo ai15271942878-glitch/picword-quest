@@ -50,7 +50,9 @@ jobs:
           (cd android && ./gradlew assembleRelease --no-daemon)
           mkdir -p dist/download
           cp android/app/build/outputs/apk/release/app-release.apk dist/download/picword.apk
-          echo "{\"versionCode\":$APP_VERSION_CODE,\"versionName\":\"$APP_VERSION_NAME\"}" > dist/download/version.json
+          # App 内检查更新用：版本号 + 这次提交的标题（作为“更新内容”）
+          NOTES="$(git log -1 --pretty=%s)" node -e 'const fs=require("fs");fs.writeFileSync("dist/download/version.json",JSON.stringify({versionCode:Number(process.env.APP_VERSION_CODE),versionName:process.env.APP_VERSION_NAME,notes:process.env.NOTES}))'
+          cat dist/download/version.json
           ls -la dist/download
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
