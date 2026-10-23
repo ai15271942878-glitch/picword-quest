@@ -283,21 +283,35 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
           </div>
         </Section>
 
-        <Section title="🔊 发音（美式英语 en-US）" hint={webSpeechSupported() ? 'Edge 浏览器自带的 “Natural” 神经语音最好听。' : '使用手机系统的语音朗读；系统没有英语语音时自动改用有道在线发音（需联网）。'}>
-          <div className="flex flex-wrap items-center gap-3">
-            <select value={s.ttsVoice} onChange={(e) => updateSettings({ ttsVoice: e.target.value })} className={cx(input, 'max-w-[320px]')}>
-              <option value="">自动选择最佳语音</option>
-              {voices.map((v) => (
-                <option key={v.voiceURI} value={v.voiceURI}>
-                  {v.name}（{v.lang}）
-                </option>
-              ))}
-            </select>
-            <label className="flex items-center gap-2">
-              语速
-              <input type="range" min={0.5} max={1.3} step={0.05} value={s.ttsRate} onChange={(e) => updateSettings({ ttsRate: Number(e.target.value) })} />
-              <span className="w-10 tabular-nums">{s.ttsRate.toFixed(2)}</span>
+        <Section title="🔊 发音（美式英语 en-US）" hint="默认用有道真人发音（需联网，和有道词典里听到的一样）；没网时自动改用系统语音。">
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-1.5">
+              <input type="radio" name="ttsSource" checked={s.ttsSource !== 'system'} onChange={() => updateSettings({ ttsSource: 'online' })} className="accent-indigo-600" />
+              有道真人发音（推荐）
             </label>
+            <label className="flex items-center gap-1.5">
+              <input type="radio" name="ttsSource" checked={s.ttsSource === 'system'} onChange={() => updateSettings({ ttsSource: 'system' })} className="accent-indigo-600" />
+              {webSpeechSupported() ? '浏览器语音' : '手机系统语音'}（离线可用）
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {s.ttsSource === 'system' && webSpeechSupported() && (
+              <select value={s.ttsVoice} onChange={(e) => updateSettings({ ttsVoice: e.target.value })} className={cx(input, 'max-w-[320px]')}>
+                <option value="">自动选择最佳语音</option>
+                {voices.map((v) => (
+                  <option key={v.voiceURI} value={v.voiceURI}>
+                    {v.name}（{v.lang}）
+                  </option>
+                ))}
+              </select>
+            )}
+            {s.ttsSource === 'system' && (
+              <label className="flex items-center gap-2">
+                语速
+                <input type="range" min={0.5} max={1.3} step={0.05} value={s.ttsRate} onChange={(e) => updateSettings({ ttsRate: Number(e.target.value) })} />
+                <span className="w-10 tabular-nums">{s.ttsRate.toFixed(2)}</span>
+              </label>
+            )}
             <Button size="sm" onClick={() => speak('Look at the picture and find the words.')}>
               ▶ 试听
             </Button>

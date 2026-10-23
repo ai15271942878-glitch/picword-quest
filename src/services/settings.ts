@@ -32,6 +32,8 @@ export interface AppSettings {
   /** 发音 */
   ttsVoice: string;
   ttsRate: number;
+  /** 发音来源：online = 有道真人发音（联网，失败自动改用系统语音）；system = 系统 / 浏览器语音合成 */
+  ttsSource: 'online' | 'system';
   /** 玩法 */
   defaultDifficulty: 'level' | 'easy' | 'medium' | 'hard';
   hintsPerLevel: number;
@@ -62,6 +64,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   useOpenverse: true,
   ttsVoice: '',
   ttsRate: 0.9,
+  ttsSource: 'online',
   defaultDifficulty: 'level',
   hintsPerLevel: 3,
   showTimer: true,

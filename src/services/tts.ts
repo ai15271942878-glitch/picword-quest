@@ -22,12 +22,19 @@ export const ttsSupported = () => typeof window !== 'undefined' && (hasWebSpeech
 export const onlineVoiceUrl = (text: string) => `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&type=2`;
 
 let onlineAudio: HTMLAudioElement | null = null;
-function speakOnline(text: string) {
+/** 有道真人发音；加载 / 播放失败时调用 onFail（只调一次），用来退回系统语音 */
+function speakOnline(text: string, onFail?: () => void) {
   onlineAudio?.pause();
-  onlineAudio = new Audio(onlineVoiceUrl(text));
-  void onlineAudio.play().catch(() => {
-    /* 断网等情况：静默 */
-  });
+  const audio = new Audio(onlineVoiceUrl(text));
+  onlineAudio = audio;
+  let failed = false;
+  const fail = () => {
+    if (failed || onlineAudio !== audio) return;
+    failed = true;
+    onFail?.();
+  };
+  audio.onerror = fail;
+  void audio.play().catch(fail);
 }
 
 /** 系统语音朗读：第一次检查是否支持英语，不支持就记住，以后直接走在线发音 */
@@ -82,9 +89,21 @@ function pickVoice(): SpeechSynthesisVoice | undefined {
   return (want && list.find((v) => v.voiceURI === want)) || list[0];
 }
 
+const isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false;
+
+/**
+ * 发音：默认先用有道真人发音（自然、规整），没网或加载失败自动改用系统语音；
+ * 设置里选了“系统语音”就直接用系统 / 浏览器语音合成（App 里系统没有英语时仍退回有道）。
+ */
 export function speak(text: string, opts: { rate?: number } = {}) {
   if (!ttsSupported() || !text) return;
   const rate = opts.rate ?? getSettings().ttsRate ?? 0.9;
+  const system = () => speakSystem(text, rate);
+  if (getSettings().ttsSource !== 'system' && isOnline()) return speakOnline(text, system);
+  system();
+}
+
+function speakSystem(text: string, rate: number) {
   if (isNative()) return void speakNative(text, rate);
   if (!hasWebSpeech()) return speakOnline(text);
   const synth = window.speechSynthesis;
