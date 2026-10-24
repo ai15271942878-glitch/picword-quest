@@ -23,6 +23,7 @@ const StatsModal = lazy(() => import('./components/modals/MiscModals').then((m) 
 const DictDrawer = lazy(() => import('./components/modals/DictDrawer').then((m) => ({ default: m.DictDrawer })));
 const CloudModal = lazy(() => import('./components/modals/CloudModal').then((m) => ({ default: m.CloudModal })));
 const AppUpdateWatcher = lazy(() => import('./components/modals/UpdateModal').then((m) => ({ default: m.AppUpdateWatcher })));
+const SortGameModal = lazy(() => import('./components/modals/SortGameModal').then((m) => ({ default: m.SortGameModal })));
 const HelpModal = lazy(() => import('./components/modals/MiscModals').then((m) => ({ default: m.HelpModal })));
 
 type Mountable = Exclude<ModalKey, null> | 'collect' | 'dict';
@@ -130,6 +131,7 @@ export default function App() {
       {lazyModal('stats', <StatsModal open={modal === 'stats'} onClose={close} />)}
       {lazyModal('settings', <SettingsModal open={modal === 'settings'} onClose={close} />)}
       {lazyModal('cloud', <CloudModal open={modal === 'cloud'} onClose={close} />)}
+      {lazyModal('sort', <SortGameModal open={modal === 'sort'} onClose={close} />)}
       {Capacitor.isNativePlatform() && (
         <Suspense fallback={null}>
           <AppUpdateWatcher />

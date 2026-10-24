@@ -14,7 +14,7 @@ import { APK_URL, promptInstall, shouldOfferApk, useCanInstall } from '../../ser
 import { Button, Spinner, cx } from '../ui/primitives';
 import { useToast } from '../ui/Toast';
 
-export type ModalKey = 'ai' | 'custom' | 'library' | 'vocab' | 'review' | 'stats' | 'settings' | 'cloud' | 'help' | null;
+export type ModalKey = 'ai' | 'custom' | 'library' | 'vocab' | 'review' | 'stats' | 'settings' | 'cloud' | 'sort' | 'help' | null;
 
 export function Header({ onOpen, onToggleDict }: { onOpen: (m: ModalKey) => void; onToggleDict: () => void }) {
   const { nextRandom, phase } = useGame();
@@ -68,6 +68,9 @@ export function Header({ onOpen, onToggleDict }: { onOpen: (m: ModalKey) => void
         </Button>
         <Button onClick={onToggleDict} title="查词：释义 + 整页插图">
           📖 图解词典
+        </Button>
+        <Button variant="violet" onClick={() => onOpen('sort')} title="关卡复习：把单词扔回它所属的照片">
+          🎯 场景分拣
         </Button>
         <Button onClick={() => onOpen('stats')}>📈 战绩</Button>
         {cloudConfigured() && (

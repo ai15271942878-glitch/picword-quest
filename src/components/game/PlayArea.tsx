@@ -17,7 +17,18 @@ const SOURCE_BADGE: Record<Level['source'], [string, string]> = {
   custom: ['🎨 自建关卡', 'bg-violet-600/90 text-white'],
 };
 
-export function SceneImage({ level, className, onZoom }: { level: Pick<Level, 'imageId' | 'imageUrl' | 'title'>; className?: string; onZoom?: () => void }) {
+export function SceneImage({
+  level,
+  className,
+  onZoom,
+  fit = 'contain',
+}: {
+  level: Pick<Level, 'imageId' | 'imageUrl' | 'title'>;
+  className?: string;
+  onZoom?: () => void;
+  /** contain：完整显示（默认）；cover：铺满裁边（小卡片里更好认） */
+  fit?: 'contain' | 'cover';
+}) {
   const src = useImageSrc(level);
   // 按 src 记录加载结果（不用 effect 在切图时重置：图片走缓存时 onLoad 可能早于 effect 触发，
   // 会被错误地重置回“加载中”而一直透明）
@@ -39,7 +50,7 @@ export function SceneImage({ level, className, onZoom }: { level: Pick<Level, 'i
           onLoad={() => setState('ok')}
           onError={() => setState('error')}
           onClick={onZoom}
-          className={cx('relative h-full w-full object-contain transition-opacity duration-500', state === 'ok' ? 'opacity-100' : 'opacity-0', onZoom && 'cursor-zoom-in')}
+          className={cx('relative h-full w-full transition-opacity duration-500', fit === 'cover' ? 'object-cover' : 'object-contain', state === 'ok' ? 'opacity-100' : 'opacity-0', onZoom && 'cursor-zoom-in')}
         />
       )}
       {state === 'loading' && <div className="absolute inset-0 animate-pulse bg-slate-700/40" />}
