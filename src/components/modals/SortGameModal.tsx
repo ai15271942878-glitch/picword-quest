@@ -293,22 +293,31 @@ function ResultView({ round, answers, result, newlyUnlocked, canNext, onAgain, o
         {round.scenes.map((l, i) => {
           const list = answers.filter((a) => a.word.scene === i);
           return (
-            <div key={l.id} className="flex gap-3 rounded-xl bg-slate-50 p-2 ring-1 ring-slate-200">
-              <SceneImage level={l} fit="cover" className="aspect-[4/3] w-24 shrink-0 self-start rounded-lg" />
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-slate-800">{l.title}</div>
-                <ul className="mt-1 space-y-0.5 text-sm">
-                  {list.map((a) => (
-                    <li key={a.word.word} className="flex items-center gap-1.5">
-                      <span>{a.outcome === 'correct' ? '✅' : a.outcome === 'wrong' ? '❌' : '⏱'}</span>
-                      <span className="font-semibold text-slate-800">{a.word.word}</span>
-                      <SpeakButton text={a.word.word} />
-                      <span className="truncate text-slate-500">{a.word.meaning}</span>
-                      {a.outcome === 'wrong' && a.chosen !== null && <span className="shrink-0 text-xs text-rose-500">扔进了 {a.chosen + 1} 号</span>}
-                    </li>
-                  ))}
-                </ul>
+            <div key={l.id} className="overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-200">
+              <div className="relative">
+                <SceneImage level={l} fit="cover" className="aspect-[2/1] w-full" />
+                <span className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-1.5 pt-6 text-sm font-bold text-white">
+                  {i + 1} 号 · {l.title}
+                </span>
               </div>
+              <ul className="divide-y divide-slate-200/70 px-3 py-1 text-sm">
+                {list.map((a) => (
+                  <li key={a.word.word} className="py-1.5">
+                    <div className="flex items-start gap-1.5">
+                      <span className="shrink-0">{a.outcome === 'correct' ? '✅' : a.outcome === 'wrong' ? '❌' : '⏱'}</span>
+                      <span className="shrink-0 font-semibold text-slate-800">{a.word.word}</span>
+                      <SpeakButton text={a.word.word} />
+                      <span className="min-w-0 flex-1 break-words text-slate-600">
+                        {a.word.pos} {a.word.meaning}
+                      </span>
+                    </div>
+                    {a.outcome === 'wrong' && a.chosen !== null && (
+                      <div className="pl-6 text-xs text-rose-500">↳ 扔进了「{round.scenes[a.chosen]?.title ?? `${a.chosen + 1} 号`}」</div>
+                    )}
+                    {a.outcome === 'miss' && <div className="pl-6 text-xs text-amber-600">↳ 超时没扔</div>}
+                  </li>
+                ))}
+              </ul>
             </div>
           );
         })}
