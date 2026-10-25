@@ -188,6 +188,19 @@ export function DictDrawer({ open, onClose }: { open: boolean; onClose: () => vo
   useBackClose(open && !!picked, () => setPicked(null));
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // 关掉词典就清空查询，下次打开回到初始界面
+  useEffect(() => {
+    if (open) return;
+    setQ('');
+    setPicked(null);
+  }, [open]);
+
+  const reset = () => {
+    setQ('');
+    setPicked(null);
+    inputRef.current?.focus();
+  };
+
   useEffect(() => {
     if (!open) return;
     inputRef.current?.focus();
@@ -266,7 +279,7 @@ export function DictDrawer({ open, onClose }: { open: boolean; onClose: () => vo
         </div>
       ) : (
         <>
-          <div className="border-b border-slate-100 px-4 py-3">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
             <input
               ref={inputRef}
               value={q}
@@ -284,18 +297,23 @@ export function DictDrawer({ open, onClose }: { open: boolean; onClose: () => vo
               autoComplete="off"
               autoCapitalize="off"
               spellCheck={false}
-              className="w-full rounded-xl border-2 border-slate-300 px-3 py-2 outline-none focus:border-indigo-500"
+              className="min-w-0 flex-1 rounded-xl border-2 border-slate-300 px-3 py-2 outline-none focus:border-indigo-500"
               aria-label="搜索词典"
             />
+            {(q || picked) && (
+              <Button size="sm" variant="ghost" onClick={reset} aria-label="清空，重新查">
+                ↺ 重新查
+              </Button>
+            )}
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
             {picked ? (
               <div>
-                {(q || results.length > 0) && (
-                  <button type="button" onClick={() => setPicked(null)} className="mb-2 cursor-pointer text-xs text-indigo-600 hover:underline">
-                    ← 返回结果
-                  </button>
-                )}
+                <div className="sticky -top-3 z-10 -mx-4 -mt-3 mb-2 border-b border-slate-100 bg-white/95 px-4 py-2 backdrop-blur">
+                  <Button size="sm" variant="secondary" onClick={() => (q || results.length > 0 ? setPicked(null) : reset())}>
+                    ← {q || results.length > 0 ? '返回结果' : '返回查询'}
+                  </Button>
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-bold text-slate-800">{picked.en}</span>
                   <SpeakButton text={picked.en} size="md" />

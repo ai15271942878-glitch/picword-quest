@@ -205,8 +205,6 @@ export function InputCard() {
             } else if (e.key === 'Enter') {
               e.preventDefault();
               commit();
-            } else if (e.key === 'Backspace' && !text && words.length) {
-              removeWord(words.length - 1);
             }
           }}
           onPaste={(e) => {
@@ -228,7 +226,7 @@ export function InputCard() {
         </Button>
       </div>
       <p className={cx('mt-1.5 min-h-[18px] text-xs', err ? 'font-semibold text-rose-600' : 'text-slate-400')}>
-        {err ?? 'Enter 添加 · 逗号可一次加多个 · 空输入时 Backspace 删除最后一个 · Ctrl+Enter 提交'}
+        {err ?? 'Enter 添加 · 逗号可一次加多个 · Ctrl+Enter 提交'}
       </p>
 
       <div className="mt-2">

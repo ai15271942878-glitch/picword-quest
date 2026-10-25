@@ -188,7 +188,7 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           <h3 className="mb-1 font-bold text-slate-800">⌨️ 快捷键</h3>
           <ul className="list-disc space-y-0.5 pl-5">
             <li>Enter 添加单词；用逗号分隔可一次添加多个</li>
-            <li>输入框为空时按 Backspace 删除最后一个词</li>
+            <li>写错了点单词标签上的 × 删除（Backspace 不会误删已添加的词）</li>
             <li>Ctrl + Enter 提交判卷；Esc 关闭弹窗</li>
           </ul>
         </section>
