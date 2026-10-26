@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "code-review-graph": {
+      "command": "D:\\AI\\tools\\uv\\bin\\code-review-graph.exe",
+      "args": ["serve", "--repo", "D:\\AI\\Mini_game\\picword-quest"],
+      "cwd": "D:\\AI\\Mini_game\\picword-quest",
+      "env": { "PYTHONUTF8": "1" },
+      "type": "stdio"
+    }
+  }
+}

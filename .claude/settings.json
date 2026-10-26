@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D:\\AI\\tools\\uv\\bin\\code-review-graph.exe update --skip-flows --repo D:\\AI\\Mini_game\\picword-quest",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D:\\AI\\tools\\uv\\bin\\code-review-graph.exe status --repo D:\\AI\\Mini_game\\picword-quest",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
