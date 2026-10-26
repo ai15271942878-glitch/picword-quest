@@ -38,6 +38,9 @@ gives you structural context (callers, dependents, test coverage) that file sear
 
 ### Workflow
 
+0. The graph database is not committed. In a fresh checkout (e.g. a Claude Code cloud session),
+   call `build_or_update_graph_tool` once before other graph tools. Tools run via `uvx`, so `uv`
+   must be on PATH.
 1. The graph auto-updates on file changes (via hooks).
 2. Use `detect_changes_tool` for code review.
 3. Use `get_affected_flows_tool` to understand impact.

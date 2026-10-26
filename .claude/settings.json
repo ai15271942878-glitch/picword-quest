@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "D:\\AI\\tools\\uv\\bin\\code-review-graph.exe update --skip-flows --repo D:\\AI\\Mini_game\\picword-quest",
-            "timeout": 30
+            "command": "uvx code-review-graph update --skip-flows -q",
+            "timeout": 120
           }
         ]
       }
@@ -18,8 +18,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "D:\\AI\\tools\\uv\\bin\\code-review-graph.exe status --repo D:\\AI\\Mini_game\\picword-quest",
-            "timeout": 10
+            "command": "uvx code-review-graph status",
+            "timeout": 120
           }
         ]
       }
